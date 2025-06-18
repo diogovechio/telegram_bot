@@ -1,0 +1,4 @@
+/secrets.json
+*.idea*
+*__pycache__*
+/database/
