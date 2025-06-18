@@ -3,6 +3,7 @@ import random
 import re
 from dataclasses import asdict
 from typing import List, Optional
+from difflib import SequenceMatcher
 
 # Project
 from pedro.brain.modules.llm import LLM
@@ -42,6 +43,8 @@ class UserOpinions:
 
             if level > len(self.moods_levels) - 1:
                 level = len(self.moods_levels) - 1
+            elif level < 0:
+                level = 0
 
         return self.moods_levels[level]
 
@@ -55,6 +58,61 @@ class UserOpinions:
         results = self.database.get_all(self.table_name)
         return [UserOpinion(**data) for data in results]
 
+    def get_users_by_text_match(self, text: str, threshold: float=0.8) -> List[UserOpinion]:
+        all_users = self.get_all_user_opinions()
+        matching_users = []
+
+        # Convert text to lowercase for case-insensitive comparison
+        text_lower = text.lower()
+
+        for user in all_users:
+            # Flag to track if user has been added to matching_users
+            user_added = False
+
+            # Check if user has a first_name
+            if user.first_name and not user_added:
+                first_name_lower = user.first_name.lower()
+
+                # Direct comparison with the entire text
+                similarity = SequenceMatcher(None, first_name_lower, text_lower).ratio()
+                if similarity >= threshold:
+                    matching_users.append(user)
+                    user_added = True
+                    continue
+
+                # Check if text is long enough to contain first_name
+                if len(text_lower) >= len(first_name_lower):
+                    # Check if first_name is similar to any part of the text
+                    for i in range(len(text_lower) - len(first_name_lower) + 1):
+                        text_substring = text_lower[i:i+len(first_name_lower)]
+                        similarity = SequenceMatcher(None, first_name_lower, text_substring).ratio()
+                        if similarity >= threshold:
+                            matching_users.append(user)
+                            user_added = True
+                            break
+
+            # Check if user has a username and hasn't been added yet
+            if user.username and not user_added:
+                username_lower = user.username.lower()
+
+                # Direct comparison with the entire text
+                similarity = SequenceMatcher(None, username_lower, text_lower).ratio()
+                if similarity >= 0.8:
+                    matching_users.append(user)
+                    continue
+
+                # Check if text is long enough to contain username
+                if len(text_lower) >= len(username_lower):
+                    # Check if username is similar to any part of the text
+                    for i in range(len(text_lower) - len(username_lower) + 1):
+                        text_substring = text_lower[i:i+len(username_lower)]
+                        similarity = SequenceMatcher(None, username_lower, text_substring).ratio()
+                        if similarity >= threshold:
+                            matching_users.append(user)
+                            break
+
+        return matching_users
+
     def adjust_mood_by_user_id(self, user_id: int, mood_adjustment: float) -> Optional[UserOpinion]:
         user_opinion = self.get_user_opinion(user_id)
         if not user_opinion:
@@ -62,6 +120,9 @@ class UserOpinions:
 
         # Adjust the mood
         user_opinion.my_mood_with_him += mood_adjustment
+
+        if user_opinion.my_mood_with_him < 0.0:
+            user_opinion.my_mood_with_him = 0.0
 
         # Update the user opinion in the database
         self.database.update(
@@ -119,14 +180,15 @@ class UserOpinions:
         return 3
 
     async def _add_opinion_by_message_tone(self, text: str, message: Message) -> Optional[UserOpinion]:
-        prompt = (f"Dada a mensagem {text} enviada por "
+        prompt = (f"Dada a mensagem '{text}' enviada por "
                   f"{create_username(first_name=message.from_.first_name, username=message.from_.username)}, "
                   f"resuma em uma frase a sua opinião sobre ele."
-                  f"Caso seja incapaz de gerar alguma opinião com base na mensagem fornecida, retorne 'None'")
+                  f" Caso seja incapaz de gerar alguma opinião com base na"
+                  f" mensagem fornecida, não peça mais informações, apenas retorne 'None'.")
 
-        opinion = await self.llm.generate_text(prompt)
+        opinion = await self.llm.generate_text(prompt, model="gpt-4.1-mini")
 
-        if "none" not in opinion.lower():
+        if not any(word.lower() in opinion.lower() for word in ["none", "desculpe,", "por favor", "entendido,"]):
             return self.add_opinion(opinion=opinion, user_id=message.from_.id)
 
         return None
@@ -165,11 +227,17 @@ class UserOpinions:
 
     async def adjust_mood(self, message: Message) -> (int, str):
         text = ""
+        message_tone = 3
         user_id = message.from_.id
+
         if message.text:
             text = message.text
+        elif message.caption:
+            text = message.caption
 
-        message_tone = await self._check_message_tone(text, message=message)
+        if text:
+            message_tone = await self._check_message_tone(text, message=message)
+
         reaction = ""
 
         if message_tone == 5:
@@ -189,6 +257,6 @@ class UserOpinions:
         if message_tone == 0:
             reaction = random.choice(["🤔", "🥴", "🤨", "🙏", "🤷"])
 
-            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=-10.0)
+            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=-50.0)
 
         return message_tone, reaction

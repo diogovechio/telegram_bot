@@ -5,6 +5,7 @@ import asyncio
 
 # Project
 from pedro.brain.reactions.default_pedro import default
+from pedro.brain.reactions.images_reactions import images_reaction
 from pedro.data_structures.telegram_message import Message
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.chat_history import ChatHistory
@@ -24,4 +25,5 @@ async def messages_handler(
     if message.chat.id in allowed_list:
         await asyncio.gather(
             default(message, history, telegram, opinions, llm),
+            images_reaction(message, history, telegram, opinions, llm),
         )

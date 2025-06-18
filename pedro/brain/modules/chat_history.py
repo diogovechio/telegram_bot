@@ -147,6 +147,9 @@ class ChatHistory:
             # If no limit is specified, use a very old date to include all files
             start_date = datetime(1970, 1, 1)
 
+        # Add timezone information to start_date (UTC-3)
+        start_date = start_date.replace(tzinfo=timezone(timedelta(hours=-3)))
+
         # List all JSON files in the chat_id directory
         result = dict()
 
@@ -200,7 +203,7 @@ class ChatHistory:
 
                         db.close()
 
-                except (ValueError, KeyError) as exc:
+                except Exception as exc:
                     logger.exception(f"Error parsing date from filename: {filename} - {exc}")
                     continue
 

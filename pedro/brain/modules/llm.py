@@ -4,10 +4,15 @@ import logging
 import asyncio
 import random
 import json
+import base64
 from asyncio import Semaphore
+from typing import Optional
 
 # External
 import aiohttp
+
+# Project
+from pedro.data_structures.images import MessageImage
 
 
 class LLM:
@@ -32,6 +37,7 @@ class LLM:
             prompt: str,
             model: str = "gpt-4.1-nano",
             temperature: float = 1.0,
+            image: 'MessageImage' = None,
     ) -> str:
         for i in range(3):
             retry_sleep = int(2 + random.random() * 5)
@@ -43,13 +49,30 @@ class LLM:
                     if is_chat_model:
                         # Chat models use the chat/completions endpoint
                         endpoint = "https://api.openai.com/v1/chat/completions"
+
+                        # Prepare message content
+                        if image:
+                            # For multimodal models, include the image in the content
+                            content = [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url", 
+                                    "image_url": {
+                                        "url": image.url
+                                    }
+                                }
+                            ]
+                        else:
+                            content = prompt
+
                         request_data = {
                             "model": model,
-                            "messages": [{"role": "user", "content": prompt}],
+                            "messages": [{"role": "user", "content": content}],
                             "temperature": temperature,
                         }
                     else:
                         # Completion models use the completions endpoint
+                        # Note: Completion models don't support images, so the image parameter will be ignored
                         endpoint = "https://api.openai.com/v1/completions"
                         request_data = {
                             "model": model,

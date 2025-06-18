@@ -9,6 +9,7 @@ import random
 # External
 import aiohttp
 
+from pedro.data_structures.images import MessageImage
 # Project
 from pedro.data_structures.telegram_message import Message, MessagesResults, MessageReceived
 from pedro.data_structures.max_size_list import MaxSizeList
@@ -64,17 +65,20 @@ class Telegram:
     async def image_downloader(
             self,
             message: Message,
-    ) -> T.Optional[bytes]:
+    ) -> None | MessageImage:
         async with self._session.get(
                 f"{self._api_route}/getFile?file_id={message.photo[-1].file_id}") as request:
             if 200 <= request.status < 300:
                 response = json.loads(await request.text())
                 if 'ok' in response and response['ok']:
                     file_path = response['result']['file_path']
-                    async with self._session.get(f"{self._api_route.replace('.org/bot', '.org/file/bot')}/"
-                                                f"{file_path}") as download_request:
+                    url = f"{self._api_route.replace('.org/bot', '.org/file/bot')}/{file_path}"
+                    async with self._session.get(url) as download_request:
                         if 200 <= download_request.status < 300:
-                            return await download_request.read()
+                            return MessageImage(
+                                url=url,
+                                bytes=await download_request.read()
+                            )
                         else:
                             logging.critical(f"Image download failed: {download_request.status}")
 
