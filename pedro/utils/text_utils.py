@@ -1,10 +1,12 @@
 # Internal
+from datetime import datetime
 import math
 import random
 import re
 
 # Project
-
+from pedro.brain.constants.constants import DATE_FULL_FORMAT, HOUR_FORMAT, DATE_FORMAT
+from pedro.data_structures.chat_log import ChatLog
 
 
 def create_username(first_name: str, username: str | None) -> str:
@@ -123,3 +125,44 @@ async def adjust_pedro_casing(
         return '@diogovechio dei pau vai ver o log'
 
     return original_message
+
+
+def friendly_chat_log(chat_logs: list[ChatLog]):
+    days_of_week = {
+        0: "Segunda-feira",
+        1: "Terça-feira",
+        2: "Quarta-feira",
+        3: "Quinta-feira",
+        4: "Sexta-feira",
+        5: "Sábado",
+        6: "Domingo"
+    }
+
+    friendly_messages = []
+    current_date = None
+
+    for log in chat_logs:
+        dt = datetime.strptime(log.datetime, DATE_FULL_FORMAT)
+
+        day_of_week = days_of_week[dt.weekday()]
+        date_str = dt.strftime(DATE_FORMAT)
+        time_str = dt.strftime(HOUR_FORMAT)
+
+        message_date = dt.date()
+        if current_date != message_date:
+            current_date = message_date
+
+            date_header = f"--- Conversa de {day_of_week}, dia {date_str} ---"
+            friendly_messages.append(date_header)
+
+        full_name = f"{log.first_name}"
+        if log.last_name:
+            full_name += f" {log.last_name}"
+
+        username_display = f" ({log.username})" if log.username is not None else ""
+        user_id = log.user_id if log.user_id is not None else ""
+
+        friendly_message = f"{time_str} - UserID [{user_id}] - {full_name}{username_display}: {log.message}"
+        friendly_messages.append(friendly_message)
+
+    return "\n".join(friendly_messages)

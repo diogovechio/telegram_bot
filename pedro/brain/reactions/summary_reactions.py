@@ -10,18 +10,7 @@ from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
 from pedro.data_structures.telegram_message import Message
-from pedro.utils.text_utils import create_username, adjust_pedro_casing
-from pedro.utils.prompt_utils import create_basic_prompt
-
-
-@dataclass
-class ReactData:
-    message: Message
-    input_text: str
-    username: str
-    bot: T.Any
-    url_detector: T.Any = None
-    destroy_message: bool = False
+from pedro.utils.text_utils import adjust_pedro_casing
 
 
 async def tldr_trigger(message: Message) -> bool:

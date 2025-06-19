@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 import os
 from typing import List, Dict, Any, Optional
 
+import aiohttp
 # External
 from tinydb import Query
 
@@ -13,57 +14,16 @@ from pedro.brain.constants.constants import DATE_FULL_FORMAT, HOUR_FORMAT, DATE_
 from pedro.brain.modules.datetime_manager import DatetimeManager
 # Project
 from pedro.data_structures.max_size_list import MaxSizeList
-from pedro.utils.text_utils import create_username, list_crop
+from pedro.utils.text_utils import create_username, list_crop, friendly_chat_log
 from pedro.data_structures.telegram_message import Message, ReplyToMessage
 from pedro.data_structures.chat_log import ChatLog
 from pedro.brain.modules.database import Database
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.llm import LLM
 from pedro.data_structures.images import MessageImage
-
+from pedro.utils.url_utils import https_url_extract, extract_website_paragraph_content
 
 logger = logging.getLogger(__name__)
-
-
-def _friendlier(chat_logs: list[ChatLog]):
-    days_of_week = {
-        0: "Segunda-feira",
-        1: "Terça-feira",
-        2: "Quarta-feira",
-        3: "Quinta-feira",
-        4: "Sexta-feira",
-        5: "Sábado",
-        6: "Domingo"
-    }
-
-    friendly_messages = []
-    current_date = None
-
-    for log in chat_logs:
-        dt = datetime.strptime(log.datetime, DATE_FULL_FORMAT)
-
-        day_of_week = days_of_week[dt.weekday()]
-        date_str = dt.strftime(DATE_FORMAT)
-        time_str = dt.strftime(HOUR_FORMAT)
-
-        message_date = dt.date()
-        if current_date != message_date:
-            current_date = message_date
-
-            date_header = f"--- Conversa de {day_of_week}, dia {date_str} ---"
-            friendly_messages.append(date_header)
-
-        full_name = f"{log.first_name}"
-        if log.last_name:
-            full_name += f" {log.last_name}"
-
-        username_display = f" ({log.username})" if log.username is not None else ""
-        user_id = log.user_id if log.user_id is not None else ""
-
-        friendly_message = f"{time_str} - UserID [{user_id}] - {full_name}{username_display}: {log.message}"
-        friendly_messages.append(friendly_message)
-
-    return "\n".join(friendly_messages)
 
 
 class ChatHistory:
@@ -81,6 +41,8 @@ class ChatHistory:
         self.datetime = DatetimeManager()
         self.telegram = telegram
         self.llm = llm
+
+        self.session = aiohttp.ClientSession()
 
     async def process_image(self, message: Message) -> str:
         if not self.telegram or not self.llm:
@@ -158,6 +120,8 @@ class ChatHistory:
         # Create a ChatLog object based on the message type
         chat_log = None
 
+        message_datetime = self.datetime.now()
+
         if isinstance(message, Message):
             # Extract user information from TelegramMessage
             user_id = message.from_.id
@@ -170,8 +134,6 @@ class ChatHistory:
                 message_text = await self.process_image(message)
             else:
                 message_text = message.text or message.caption or ""
-
-            message_datetime = self.datetime.now()
 
             chat_log = ChatLog(
                 user_id=str(user_id),
@@ -189,7 +151,6 @@ class ChatHistory:
             first_name = message.from_.first_name or "" if message.from_ else ""
             last_name = message.from_.last_name or "" if message.from_ else ""
             message_text = message.text or ""
-            message_datetime = self.datetime.now()
 
             chat_log = ChatLog(
                 user_id=str(user_id),
@@ -359,7 +320,7 @@ class ChatHistory:
         return all_messages
 
     def get_friendly_last_messages(self, chat_id: int, limit: int = 20, days: int=0) -> str:
-        return _friendlier(self.get_last_messages(chat_id, limit, days))
+        return friendly_chat_log(self.get_last_messages(chat_id, limit, days))
 
     def get_messages_since_last_from_user(self, chat_id: int, user_id: int, tolerance: int=5) -> List[ChatLog]:
         # Get all messages for this chat
@@ -402,4 +363,4 @@ class ChatHistory:
         return all_messages[last_user_msg_index:]
 
     def get_friendly_messages_since_last_from_user(self, chat_id: int, user_id: int) -> str:
-        return _friendlier(self.get_messages_since_last_from_user(chat_id, user_id))
+        return friendly_chat_log(self.get_messages_since_last_from_user(chat_id, user_id))
