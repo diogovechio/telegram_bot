@@ -68,6 +68,38 @@ class ChatHistory:
             logger.exception(f"Error processing image: {e}")
             return message.text or message.caption or ""
 
+    async def process_reply_photo(self, reply: ReplyToMessage) -> str:
+        if not self.telegram or not self.llm:
+            logger.warning("Telegram or LLM not provided, cannot process reply photo")
+            return ""
+
+        if not reply.photo:
+            return ""
+
+        try:
+            # Create a temporary Message object to use with image_downloader
+            temp_message = Message(
+                from_=reply.from_,
+                message_id=reply.message_id,
+                chat=reply.chat,
+                date=reply.date,
+                text=reply.text,
+                photo=reply.photo
+            )
+
+            image = await self.telegram.image_downloader(temp_message)
+            if not image:
+                logger.warning("Failed to download reply photo")
+                return ""
+
+            prompt = "Descreva a imagem com o máximo de detalhes identificáveis"
+            description = await self.llm.generate_text(prompt=prompt, image=image)
+
+            return f"[[IMAGEM ANEXADA: {description} ]]"
+        except Exception as e:
+            logger.exception(f"Error processing reply photo: {e}")
+            return ""
+
     async def add_message(self, message: Message | ReplyToMessage | str, chat_id: int, is_pedro: bool = False):
         # Format the date as a string (DD-MM-YYYY)
         date_str = self.datetime.get_current_date_str()

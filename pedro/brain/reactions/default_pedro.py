@@ -5,7 +5,7 @@ from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
 from pedro.data_structures.telegram_message import Message
-from pedro.utils.prompt_utils import create_base_prompt, text_trigger
+from pedro.utils.prompt_utils import create_basic_prompt, text_trigger
 from pedro.utils.text_utils import adjust_pedro_casing
 
 
@@ -20,7 +20,7 @@ async def default(
         await opinions.adjust_mood(message)
 
         with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-            prompt = create_base_prompt(message, history, opinions)
+            prompt = await create_basic_prompt(message, history, opinions)
 
             response = await adjust_pedro_casing(
                 await llm.generate_text(prompt)

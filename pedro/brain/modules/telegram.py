@@ -20,7 +20,7 @@ class Telegram:
         self,
         token: str,
         semaphore: int = 3,
-        polling_rate: int = 1
+        polling_rate: int = 0.5
     ):
         self._api_route = f"https://api.telegram.org/bot{token}"
         self._semaphore = asyncio.Semaphore(semaphore)
