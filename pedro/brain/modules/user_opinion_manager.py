@@ -33,6 +33,9 @@ class UserOpinions:
             "Seja impaciente e passivo agressivo. Responda de acordo com sua opinião sobre o usuário que enviou a mensagem."
         ]
 
+        # Start the mood decay loop
+        asyncio.create_task(self.mood_decay_loop())
+
     def get_mood_level_prompt(self, user_id: int) -> str:
         level = 0
         user_opinion = self.get_user_opinion(user_id)
@@ -205,7 +208,7 @@ class UserOpinions:
                   f" Caso seja incapaz de gerar alguma opinião ou observação com base na"
                   f" mensagem fornecida, não peça mais informações, apenas retorne '###NONE###'.")
 
-        opinion = await self.llm.generate_text(prompt, model="gpt-4.1-mini")
+        opinion = await self.llm.generate_text(prompt)
 
         if not any(word.lower() in opinion.lower() for word in ["não tenho", "none", "desculpe,", "por favor,", "entendido,"]):
             return self.add_opinion(opinion=opinion, user_id=message.from_.id)
@@ -341,6 +344,37 @@ class UserOpinions:
                 self.add_opinion(user_id=user_id, opinion=random.choice(["Sumido.", "Desaparecido.", "Ausente.", "Não presente.", "Inexistente."]))
 
         logging.info("Finished processing historical messages for all users")
+
+    async def mood_decay_loop(self):
+        """
+        Runs in an infinite loop, decreasing the my_mood_with_him value for each user by 0.2 every 10 minutes,
+        until it reaches a minimum of 0.0.
+        """
+        logging.info("Starting mood decay loop")
+        while True:
+            try:
+                # Get all user opinions
+                all_users = self.get_all_user_opinions()
+
+                if not all_users:
+                    logging.warning("No users found in database for mood decay")
+                    continue
+
+                logging.info(f"Processing mood decay for {len(all_users)} users")
+
+                # For each user with my_mood_with_him > 0.0, decrease it by 0.2
+                for user in all_users:
+                    if user.my_mood_with_him > 0.0:
+                        # Decrease by 0.1, but not below 0.0
+                        self.adjust_mood_by_user_id(user.user_id, -0.1)
+                        logging.info(f"Decreased mood for user {user.user_id} by 0.2")
+
+                # Sleep for 10 minutes (600 seconds)
+                await asyncio.sleep(600)
+            except Exception as e:
+                logging.error(f"Error in mood decay loop: {e}")
+                # Sleep for a short time before retrying in case of error
+                await asyncio.sleep(60)
 
     async def adjust_mood(self, message: Message) -> (int, str):
         text = ""

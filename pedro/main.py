@@ -93,7 +93,8 @@ class TelegramBot:
                 self.loop.create_task(self.user_opinion_manager.get_opinion_by_historical_messages())
 
                 # Initialize and start the scheduler to run process_historical_messages every day at 9 AM
-                self.scheduler = Scheduler(self.user_opinion_manager)
+                # and database backup every day at 21:00
+                self.scheduler = Scheduler(self.user_opinion_manager, self.telegram)
                 self.scheduler.start()
 
                 self.allowed_list = [value.id for value in self.config.allowed_ids]

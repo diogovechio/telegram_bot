@@ -71,7 +71,7 @@ class ChatHistory:
             logger.exception(f"Error processing image: {e}")
             return message.text or message.caption or ""
 
-    async def process_reply_photo(self, reply: ReplyToMessage) -> str:
+    async def process_photo(self, reply: ReplyToMessage | Message) -> str:
         if not self.telegram or not self.llm:
             logger.warning("Telegram or LLM not provided, cannot process reply photo")
             return ""

@@ -13,6 +13,8 @@ from pedro.brain.reactions.summary_reactions import summary_reaction
 from pedro.brain.reactions.agenda_commands import agenda_commands_reaction
 from pedro.brain.reactions.complain_swearword import complain_swearword_reaction
 from pedro.brain.reactions.emoji_reactions import emoji_reactions
+from pedro.brain.reactions.misc_commands import misc_commands_reaction
+from pedro.brain.reactions.critic_or_praise import critic_or_praise_reaction
 from pedro.data_structures.telegram_message import Message
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.chat_history import ChatHistory
@@ -41,4 +43,6 @@ async def messages_handler(
             agenda_commands_reaction(updated_message, history, telegram, opinions, agenda, llm),
             complain_swearword_reaction(updated_message, history, telegram, opinions, llm),
             emoji_reactions(updated_message, history, telegram, opinions, llm),
+            misc_commands_reaction(updated_message, history, telegram, opinions, llm),
+            critic_or_praise_reaction(updated_message, history, telegram, opinions, llm),
         )

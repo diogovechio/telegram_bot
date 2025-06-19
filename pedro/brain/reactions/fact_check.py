@@ -11,26 +11,29 @@ from pedro.data_structures.telegram_message import Message
 from pedro.utils.text_utils import adjust_pedro_casing
 
 
-async def fact_check_trigger(message: Message) -> bool:
-    return message.text and (
+async def fact_check_reaction(
+        message: Message,
+        history: ChatHistory,
+        telegram: Telegram,
+        opinions: UserOpinions,
+        llm: LLM,
+):
+    if message.text and (
         message.text.lower().startswith("/refute") or 
         message.text.lower().startswith("/fact") or
         message.text.lower().startswith("/check")
-    )
+    ):
+        await fact_check(message, history, telegram, opinions, llm)
 
 
-async def fact_check_reaction(
+async def fact_check(
     message: Message,
     history: ChatHistory,
     telegram: Telegram,
     opinions: UserOpinions,
     llm: LLM,
 ) -> None:
-    is_fact_check = await fact_check_trigger(message)
-
-    if not is_fact_check:
-        return
-
+    model = "gpt-4.1-mini"
     training_counterpoint = """Como especialista em verificação de fatos e jornalista com 
     uma perspectiva marxista materialista e dialética, examine 'Argumento' a 
     partir de uma perspectiva de defesa da classe trabalhadora. Identifique 
@@ -42,23 +45,28 @@ async def fact_check_reaction(
     metodológica utilizada."""
 
     with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-        if message.reply_to_message:
-            if message.reply_to_message.text:
+        if message.reply_to_message or message.photo:
+            if message.reply_to_message and message.reply_to_message.text:
                 mentiroso_argument = message.reply_to_message.text
-            elif message.reply_to_message.photo:
-                mentiroso_argument = await history.process_reply_photo(message.reply_to_message)
+                mentiroso = message.reply_to_message.from_.first_name
+                reply_to = message.reply_to_message.message_id
+            elif message.reply_to_message and message.reply_to_message.photo:
+                mentiroso_argument = await history.process_photo(message.reply_to_message)
+                mentiroso = message.reply_to_message.from_.first_name
+                reply_to = message.reply_to_message.message_id
+            elif message.photo:
+                mentiroso_argument = await history.process_photo(message)
+                mentiroso = message.from_.first_name
+                reply_to = message.message_id
             else:
                 return
 
-            mentiroso = message.reply_to_message.from_.first_name
-
             prompt = f"{training_counterpoint} Responda o Argumento de {mentiroso}: '{mentiroso_argument}'"
-
-            reply_to = message.reply_to_message.message_id
 
             fact_check_text = await llm.generate_text(
                 prompt=f"{prompt}",
                 temperature=0.6,
+                model=model
             )
 
             fact_check_text = fact_check_text.lower()
@@ -76,7 +84,7 @@ async def fact_check_reaction(
 
             message_text = message_text.lower()
 
-            if mentiroso.lower() not in message_text and message.reply_to_message and not message.reply_to_message.from_.is_bot:
+            if mentiroso.lower() not in message_text:
                 message_text = f"{mentiroso}, {message_text}"
 
             if random.random() < 0.25:
