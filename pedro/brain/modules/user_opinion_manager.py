@@ -1,22 +1,26 @@
 # Internal
 import random
+import os
 import re
 from dataclasses import asdict
-from typing import List, Optional
+from typing import List, Optional, Dict
 from difflib import SequenceMatcher
+import logging
 
 # Project
 from pedro.brain.modules.llm import LLM
 from pedro.data_structures.user_opinion import UserOpinion
-from pedro.data_structures.telegram_message import Message, From
+from pedro.data_structures.telegram_message import Message, From, Chat
 from pedro.brain.modules.database import Database
 from pedro.utils.text_utils import create_username
+from pedro.data_structures.chat_log import ChatLog
 
 
 class UserOpinions:
-    def __init__(self, database: Database, llm: LLM, max_opinions: int = 10):
+    def __init__(self, database: Database, llm: LLM, chat_history=None, max_opinions: int = 10):
         self.database = database
         self.llm = llm
+        self.chat_history = chat_history
         self.table_name = "user_opinions"
         self.max_opinions = max_opinions
 
@@ -171,15 +175,15 @@ class UserOpinions:
 
         if len(return_num):
             if return_num != 3 and message:
-                await self._add_opinion_by_message_tone(text, message=message)
+                await self.add_opinion_by_message_tone(text, message=message)
             elif random.random() < 0.3:
-                await self._add_opinion_by_message_tone(text, message=message)
+                await self.add_opinion_by_message_tone(text, message=message)
 
             return int(return_num)
 
         return 3
 
-    async def _add_opinion_by_message_tone(self, text: str, message: Message) -> Optional[UserOpinion]:
+    async def add_opinion_by_message_tone(self, text: str, message: Message) -> Optional[UserOpinion]:
         prompt = (f"Dada a mensagem '{text}' enviada por "
                   f"{create_username(first_name=message.from_.first_name, username=message.from_.username)}, "
                   f"resuma em poucas palavras a sua opinião sobre ele."
@@ -224,6 +228,111 @@ class UserOpinions:
         )
 
         return user_opinion
+
+    async def process_historical_messages(self):
+        """
+        Process historical messages for all users:
+        1. Get all user_ids from user opinions
+        2. For each user_id, fetch messages from the last 2 days from all chats
+        3. Randomly select 10 messages
+        4. Generate opinions based on these messages
+        """
+        if not self.chat_history:
+            logging.warning("Chat history not available, skipping historical message processing")
+            return
+
+        logging.info("Starting to process historical messages for all users")
+
+        # Get all user opinions
+        all_users = self.get_all_user_opinions()
+
+        # Get all chat_ids by listing directories in chat_logs_dir
+        chat_logs_dir = self.chat_history.chat_logs_dir
+        if not os.path.exists(chat_logs_dir):
+            logging.warning(f"Chat logs directory {chat_logs_dir} does not exist")
+            return
+
+        chat_ids = []
+        for item in os.listdir(chat_logs_dir):
+            if os.path.isdir(os.path.join(chat_logs_dir, item)):
+                try:
+                    chat_id = int(item)
+                    chat_ids.append(chat_id)
+                except ValueError:
+                    # Skip directories that are not valid chat_ids
+                    pass
+
+        if not chat_ids:
+            logging.warning("No chat IDs found in chat logs directory")
+            return
+
+        logging.info(f"Found {len(chat_ids)} chat IDs: {chat_ids}")
+
+        for user in all_users:
+            user_id = user.user_id
+            logging.info(f"Processing historical messages for user {user_id}")
+
+            # Collect messages from all chats
+            user_messages = []
+
+            for chat_id in chat_ids:
+                # Get messages for this chat for the last 2 days
+                try:
+                    messages_dict = self.chat_history.get_messages(chat_id=chat_id, days_limit=2)
+
+                    # Filter messages by user_id
+                    for date_str, chat_logs in messages_dict.items():
+                        for chat_log in chat_logs:
+                            if str(chat_log.user_id) == str(user_id):
+                                user_messages.append(chat_log)
+                except Exception as e:
+                    logging.error(f"Error getting messages for chat {chat_id}: {e}")
+
+            # If we have messages for this user
+            if user_messages:
+                logging.info(f"Found {len(user_messages)} messages for user {user_id} across all chats")
+
+                # Randomly select up to 10 messages
+                if len(user_messages) > 10:
+                    selected_messages = random.sample(user_messages, 10)
+                else:
+                    selected_messages = user_messages
+
+                # Make sure we have messages to process
+                if selected_messages:
+                    # Concatenate all selected messages into a single text
+                    concatenated_messages = ""
+                    # Use the first message to create the Message object
+                    first_chat_log = selected_messages[0]
+                    try:
+                        # Create a Message object from the first ChatLog
+                        from_obj = From(
+                            id=int(first_chat_log.user_id),
+                            first_name=first_chat_log.first_name,
+                            last_name=first_chat_log.last_name,
+                            username=first_chat_log.username
+                        )
+
+                        message = Message(
+                            from_=from_obj,
+                            text=""  # Will be set after concatenation
+                        )
+
+                        # Concatenate all messages
+                        for chat_log in selected_messages:
+                            concatenated_messages += chat_log.message + "\n"
+
+                        # Set the concatenated text to the message
+                        message.text = concatenated_messages.strip()
+
+                        # Generate a single opinion based on all messages
+                        await self.add_opinion_by_message_tone(concatenated_messages, message)
+                    except Exception as e:
+                        logging.error(f"Error processing messages for user {user_id}: {e}")
+            else:
+                self.add_opinion(user_id=user_id, opinion=random.choice(["Sumido.", "Desaparecido.", "Ausente.", "Não presente.", "Inexistente."]))
+
+        logging.info("Finished processing historical messages for all users")
 
     async def adjust_mood(self, message: Message) -> (int, str):
         text = ""

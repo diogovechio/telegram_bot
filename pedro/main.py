@@ -81,8 +81,11 @@ class TelegramBot:
                 self.telegram = Telegram(self.config.secrets.bot_token)
                 self.llm = LLM(self.config.secrets.openai_key)
                 self.database = Database("database/pedro_database.json")
-                self.user_opinion_manager = UserOpinions(self.database, self.llm)
                 self.chat_history = ChatHistory(telegram=self.telegram, llm=self.llm)
+                self.user_opinion_manager = UserOpinions(self.database, self.llm, chat_history=self.chat_history)
+
+                # Process historical messages for all users
+                self.loop.create_task(self.user_opinion_manager.process_historical_messages())
 
                 self.allowed_list = [value.id for value in self.config.allowed_ids]
 
