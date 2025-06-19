@@ -15,9 +15,9 @@ def create_base_prompt(message: Message, memory: ChatHistory, opinions: UserOpin
     text = message.caption if message.caption else message.text
 
     if text:
-        base_prompt = f"{opinions.get_mood_level_prompt(message.from_.id)}\n\nFingindo ser o Pedro, responda a mensagem '{text}' no final da conversa.\n\n"
+        base_prompt = f"{opinions.get_mood_level_prompt(message.from_.id)}\n\nVocê é o Pedro, responda a mensagem '{text}' no final da conversa.\n\n"
     else:
-        base_prompt = f"{opinions.get_mood_level_prompt(message.from_.id)}\n\nFingindo ser o Pedro, responda sobre imagem no final da conversa.\n\n"
+        base_prompt = f"{opinions.get_mood_level_prompt(message.from_.id)}\n\nVocê é o Pedr, responda sobre imagem no final da conversa.\n\n"
 
     opinions_text = ""
 

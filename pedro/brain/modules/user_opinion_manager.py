@@ -24,19 +24,11 @@ class UserOpinions:
         self.table_name = "user_opinions"
         self.max_opinions = max_opinions
 
-        self.moods_levels = ["Pedro responde de maneira amigável e objetivamente.",
-              "Pedro responde de maneira amigável e objetivamente.",
-              "Pedro responde de maneira amigável e objetivamente.",
-              "Pedro é prestativo e responde objetivamente.",
-              "Pedro dá respostas bem curtas",
-              "Pedro responde com indiferença, porém de maneira objetiva.",
-              "Pedro costuma ser frio e dar respostas muito curtas.",
-              "Pedro costuma ser um pouco passivo agressivo.",
-              "Pedro costumar ser um pouco grosseiro. "
-              "Pedro usa o que sabe sobre as pessoas pra fazer pequenos deboches.",
-              "Pedro responde com má vontade e é sempre passivo agressivo. "
-              "Pedro usa o que sabe sobre as pessoas pra fazer pequenos deboches. "
-              "Pedro nunca costuma se desculpar por nada."]
+        self.moods_levels = [
+            "Responda de maneira sucinta. Evitando comentários desnecessários.",
+            "Responda de acordo com sua opinião sobre o usuário que enviou a mensagem.",
+            "Seja impaciente e passivo agressivo. Responda de acordo com sua opinião sobre o usuário que enviou a mensagem."
+        ]
 
     def get_mood_level_prompt(self, user_id: int) -> str:
         level = 0
@@ -186,8 +178,8 @@ class UserOpinions:
     async def add_opinion_by_message_tone(self, text: str, message: Message) -> Optional[UserOpinion]:
         prompt = (f"Dada a mensagem '{text}' enviada por "
                   f"{create_username(first_name=message.from_.first_name, username=message.from_.username)}, "
-                  f"resuma em poucas palavras a sua opinião sobre ele."
-                  f" Caso seja incapaz de gerar alguma opinião com base na"
+                  f"resuma em poucas palavras a sua opinião ou o que identificou sobre ele."
+                  f" Caso seja incapaz de gerar alguma opinião ou observação com base na"
                   f" mensagem fornecida, não peça mais informações, apenas retorne '###NONE###'.")
 
         opinion = await self.llm.generate_text(prompt, model="gpt-4.1-mini")
@@ -230,13 +222,6 @@ class UserOpinions:
         return user_opinion
 
     async def process_historical_messages(self):
-        """
-        Process historical messages for all users:
-        1. Get all user_ids from user opinions
-        2. For each user_id, fetch messages from the last 2 days from all chats
-        3. Randomly select 10 messages
-        4. Generate opinions based on these messages
-        """
         if not self.chat_history:
             logging.warning("Chat history not available, skipping historical message processing")
             return

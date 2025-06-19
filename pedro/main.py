@@ -16,6 +16,7 @@ from pedro.brain.reactions.messages_handler import messages_handler
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.database import Database
 from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.scheduler import Scheduler
 
 logging.basicConfig(level=logging.INFO)
 
@@ -86,6 +87,10 @@ class TelegramBot:
 
                 # Process historical messages for all users
                 self.loop.create_task(self.user_opinion_manager.process_historical_messages())
+
+                # Initialize and start the scheduler to run process_historical_messages every day at 9 AM
+                self.scheduler = Scheduler(self.user_opinion_manager)
+                self.scheduler.start()
 
                 self.allowed_list = [value.id for value in self.config.allowed_ids]
 
