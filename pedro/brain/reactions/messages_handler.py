@@ -23,7 +23,8 @@ async def messages_handler(
         allowed_list: list,
 ) -> None:
     if message.chat.id in allowed_list:
-        await asyncio.gather(
-            default(message, history, telegram, opinions, llm),
-            images_reaction(message, history, telegram, opinions, llm),
-        )
+        with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
+            await asyncio.gather(
+                default(message, history, telegram, opinions, llm),
+                images_reaction(message, history, telegram, opinions, llm),
+            )
