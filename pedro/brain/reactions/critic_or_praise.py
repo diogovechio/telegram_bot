@@ -3,6 +3,7 @@ import random
 
 # Project
 from pedro.brain.modules.chat_history import ChatHistory
+from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
@@ -23,30 +24,27 @@ async def critic_or_praise_reaction(
             message.text.startswith("/elogie") or
             message.text.startswith("/simpatize")
     ):
-        await _critic_or_praise(message, telegram, llm)
+        await _critic_or_praise(message, telegram, llm, history)
 
-async def _critic_or_praise(message, telegram, llm) -> None:
-    bot = telegram
-
-    with bot.sending_action(message.chat.id, action="typing"):
+async def _critic_or_praise(message, telegram, llm, history) -> None:
+    with sending_action(chat_id=message.chat.id, telegram=telegram):
         if message.reply_to_message and message.reply_to_message.text:
-            user_name = message.reply_to_message.from_.first_name
+            text = message.reply_to_message.text
+        elif message.reply_to_message and message.reply_to_message.photo:
+            text = await history.process_photo(message.reply_to_message)
 
-            if message.text.startswith("/critique"):
-                prompt = f"{'dê uma bronca em' if round(random.random()) else 'xingue o'} {user_name} por ter dito isso: " \
-                         f"'{message.reply_to_message.text}'"
+        user_name = message.reply_to_message.from_.first_name
 
-            elif message.text.startswith("/elogie"):
-                prompt = f"{'elogie o' if round(random.random()) else 'parabenize o'} {user_name} por ter dito isso: " \
-                         f"'{message.reply_to_message.text}'"
-
-            else:
-                prompt = f"simpatize com {user_name} por estar nessa situação: '{message.reply_to_message.text}'"
-
-            reply_to = message.reply_to_message.message_id
-
+        if message.text.startswith("/critique"):
+            prompt = f"{'dê uma bronca em' if round(random.random()) else 'xingue o'} {user_name} por ter dito isso: " \
+                     f"'{text}'"
+        elif message.text.startswith("/elogie"):
+            prompt = f"{'elogie o' if round(random.random()) else 'parabenize o'} {user_name} por ter dito isso: " \
+                     f"'{text}'"
         else:
-            return
+            prompt = f"simpatize com {user_name} por estar nessa situação: '{text}'"
+
+        reply_to = message.reply_to_message.message_id
 
         message_text = await llm.generate_text(
             f"{prompt}\npedro:",
@@ -61,7 +59,7 @@ async def _critic_or_praise(message, telegram, llm) -> None:
         if random.random() < 0.25:
             message_text = message_text.upper()
 
-        await bot.send_message(
+        await telegram.send_message(
             message_text=message_text,
             chat_id=message.chat.id,
             reply_to=reply_to
