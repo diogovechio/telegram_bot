@@ -16,9 +16,9 @@ async def default(
         opinions: UserOpinions,
         llm: LLM,
 ) -> None:
-    await opinions.adjust_mood(message)
-
     if text_trigger(message=message):
+        await opinions.adjust_mood(message)
+
         with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
             prompt = create_base_prompt(message, history, opinions)
 

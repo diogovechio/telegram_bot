@@ -172,7 +172,7 @@ class UserOpinions:
         if len(return_num):
             if return_num != 3 and message:
                 await self._add_opinion_by_message_tone(text, message=message)
-            elif random.random() < 0.5:
+            elif random.random() < 0.3:
                 await self._add_opinion_by_message_tone(text, message=message)
 
             return int(return_num)
@@ -182,13 +182,13 @@ class UserOpinions:
     async def _add_opinion_by_message_tone(self, text: str, message: Message) -> Optional[UserOpinion]:
         prompt = (f"Dada a mensagem '{text}' enviada por "
                   f"{create_username(first_name=message.from_.first_name, username=message.from_.username)}, "
-                  f"resuma em uma frase a sua opinião sobre ele."
+                  f"resuma em poucas palavras a sua opinião sobre ele."
                   f" Caso seja incapaz de gerar alguma opinião com base na"
-                  f" mensagem fornecida, não peça mais informações, apenas retorne 'None'.")
+                  f" mensagem fornecida, não peça mais informações, apenas retorne '###NONE###'.")
 
         opinion = await self.llm.generate_text(prompt, model="gpt-4.1-mini")
 
-        if not any(word.lower() in opinion.lower() for word in ["none", "desculpe,", "por favor", "entendido,"]):
+        if not any(word.lower() in opinion.lower() for word in ["não tenho", "none", "desculpe,", "por favor,", "entendido,"]):
             return self.add_opinion(opinion=opinion, user_id=message.from_.id)
 
         return None
