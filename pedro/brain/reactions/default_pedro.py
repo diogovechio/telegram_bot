@@ -20,7 +20,7 @@ async def default(
         await opinions.adjust_mood(message)
 
         with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-            web_search = any(word in message.text.lower() for word in ["cotação", "fonte", "pesquis", "google", "busque", "notícia", "noticia"])
+            web_search = any(word in message.text.lower() for word in ["tempo", "previs", "clima", "cotação", "fonte", "pesquis", "google", "busque", "notícia", "noticia"])
             model = "gpt-4.1-mini" if web_search else "gpt-4.1-nano"
 
             prompt = await create_basic_prompt(
