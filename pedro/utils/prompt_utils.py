@@ -23,12 +23,13 @@ async def process_reply_message(message: Message, memory: ChatHistory) -> str:
         return f"... (em resposta a mensagem enviada por {sender_name}: [[{reply_text}]] )"
 
 
-async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: UserOpinions, total_messages=15) -> str:
+async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: UserOpinions | None, total_messages=15) -> str:
     datetime = DatetimeManager()
 
     chat_history = memory.get_friendly_last_messages(chat_id=message.chat.id, limit=total_messages)
 
-    users_opinions = opinions.get_users_by_text_match(chat_history)
+    if opinions:
+        users_opinions = opinions.get_users_by_text_match(chat_history)
 
     text = message.caption if message.caption else message.text
 
@@ -36,7 +37,10 @@ async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: U
     if message.reply_to_message:
         reply_text = await process_reply_message(message, memory)
 
-    if text:
+    if not opinions:
+        base_prompt = (f"Você é o Pedro, responda a mensagem '{text}' enviada "
+                       f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
+    elif opinions and text:
         base_prompt = (f"{opinions.get_mood_level_prompt(message.from_.id)}\n\nVocê é o Pedro, "
                        f"responda a mensagem '{text}' enviada "
                        f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
@@ -47,11 +51,12 @@ async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: U
 
     opinions_text = ""
 
-    for user_opinion in users_opinions:
-        if user_opinion.opinions:
-            user_opinions_text = "\n".join(user_opinion.opinions)
-            user_display_name = create_username(user_opinion.first_name, user_opinion.username)
-            opinions_text += f"Opiniões de Pedro sobre {user_display_name}: \n{user_opinions_text}\n\n"
+    if opinions:
+        for user_opinion in users_opinions:
+            if user_opinion.opinions:
+                user_opinions_text = "\n".join(user_opinion.opinions)
+                user_display_name = create_username(user_opinion.first_name, user_opinion.username)
+                opinions_text += f"Opiniões de Pedro sobre {user_display_name}: \n{user_opinions_text}\n\n"
 
     return base_prompt + opinions_text + chat_history + reply_text + f"\n{datetime.get_current_time_str()} - UserID [0] - Pedro (pedroleblonbot): "
 

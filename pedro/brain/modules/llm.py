@@ -38,6 +38,7 @@ class LLM:
             model: str = "gpt-4.1-nano",
             temperature: float = 1.0,
             image: 'MessageImage' = None,
+            web_search: bool = False,
     ) -> str:
         for i in range(3):
             retry_sleep = int(2 + random.random() * 5)
@@ -46,40 +47,51 @@ class LLM:
                     model = model or self.default_model
                     is_chat_model = model != "gpt-3.5-turbo-instruct"
 
-                    if is_chat_model:
-                        # Chat models use the chat/completions endpoint
-                        endpoint = "https://api.openai.com/v1/chat/completions"
-
-                        # Prepare message content
-                        if image:
-                            # For multimodal models, include the image in the content
-                            content = [
-                                {"type": "text", "text": prompt},
-                                {
-                                    "type": "image_url", 
-                                    "image_url": {
-                                        "url": image.url
-                                    }
-                                }
-                            ]
-                        else:
-                            content = prompt
-
+                    # Handle web search request
+                    if web_search:
+                        # Web search uses the responses endpoint
+                        endpoint = "https://api.openai.com/v1/responses"
                         request_data = {
                             "model": model,
-                            "messages": [{"role": "user", "content": content}],
+                            "input": prompt,
                             "temperature": temperature,
+                            "tools": [{"type": "web_search_preview"}],
                         }
                     else:
-                        # Completion models use the completions endpoint
-                        # Note: Completion models don't support images, so the image parameter will be ignored
-                        endpoint = "https://api.openai.com/v1/completions"
-                        request_data = {
-                            "model": model,
-                            "prompt": prompt,
-                            "temperature": temperature,
-                            "max_tokens": 1024,
-                        }
+                        if is_chat_model:
+                            # Chat models use the chat/completions endpoint
+                            endpoint = "https://api.openai.com/v1/chat/completions"
+
+                            # Prepare message content
+                            if image:
+                                # For multimodal models, include the image in the content
+                                content = [
+                                    {"type": "text", "text": prompt},
+                                    {
+                                        "type": "image_url", 
+                                        "image_url": {
+                                            "url": image.url
+                                        }
+                                    }
+                                ]
+                            else:
+                                content = prompt
+
+                            request_data = {
+                                "model": model,
+                                "messages": [{"role": "user", "content": content}],
+                                "temperature": temperature,
+                            }
+                        else:
+                            # Completion models use the completions endpoint
+                            # Note: Completion models don't support images, so the image parameter will be ignored
+                            endpoint = "https://api.openai.com/v1/completions"
+                            request_data = {
+                                "model": model,
+                                "prompt": prompt,
+                                "temperature": temperature,
+                                "max_tokens": 1024,
+                            }
 
                     async with self.session.post(
                             endpoint,
@@ -89,7 +101,13 @@ class LLM:
                         response = await openai_request.text()
                         response_json = json.loads(response)
 
-                        if is_chat_model:
+                        if web_search:
+                            output = response_json["output"]
+                            if len(output) > 1:
+                                response_text = output[1]["content"][0]["text"]
+                            else:
+                                response_text = output[0]["content"][0]["text"]
+                        elif is_chat_model:
                             response_text = response_json['choices'][0]['message']['content']
                         else:
                             response_text = response_json['choices'][0]['text']

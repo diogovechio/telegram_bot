@@ -153,7 +153,7 @@ async def update_chat_title(
     llm: LLM,
     summary: str
 ) -> None:
-    if message.chat.id != -20341310:
+    if message.chat.id != -1001369599178:
         return
 
     title_prompt = "com base no texto abaixo, sugira o nome de um chat em no máximo 4 palavras:\n\n"

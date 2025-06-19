@@ -20,10 +20,17 @@ async def default(
         await opinions.adjust_mood(message)
 
         with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-            prompt = await create_basic_prompt(message, history, opinions)
+            web_search = any(word in message.text.lower() for word in ["cotação", "fonte", "pesquis", "google", "busque", "notícia", "noticia"])
+            model = "gpt-4.1-mini" if web_search else "gpt-4.1-nano"
+
+            prompt = await create_basic_prompt(
+                message, history,
+                opinions=None if web_search else opinions,
+                total_messages=3 if web_search else 15
+            )
 
             response = await adjust_pedro_casing(
-                await llm.generate_text(prompt)
+                await llm.generate_text(prompt, model=model, web_search=web_search)
             )
 
             await history.add_message(response, chat_id=message.chat.id, is_pedro=True)
