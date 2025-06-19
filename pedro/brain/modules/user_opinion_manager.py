@@ -1,4 +1,5 @@
 # Internal
+import asyncio
 import random
 import os
 import re
@@ -9,6 +10,7 @@ import logging
 
 # Project
 from pedro.brain.modules.llm import LLM
+from pedro.brain.modules.telegram import Telegram
 from pedro.data_structures.user_opinion import UserOpinion
 from pedro.data_structures.telegram_message import Message, From, Chat
 from pedro.brain.modules.database import Database
@@ -17,9 +19,10 @@ from pedro.data_structures.chat_log import ChatLog
 
 
 class UserOpinions:
-    def __init__(self, database: Database, llm: LLM, chat_history=None, max_opinions: int = 10):
+    def __init__(self, database: Database, llm: LLM, telegram: Telegram, chat_history=None, max_opinions: int = 10):
         self.database = database
         self.llm = llm
+        self.telegram = telegram
         self.chat_history = chat_history
         self.table_name = "user_opinions"
         self.max_opinions = max_opinions
@@ -372,5 +375,14 @@ class UserOpinions:
             reaction = random.choice(["🤔", "🥴", "🤨", "🙏", "🤷"])
 
             self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=-50.0)
+
+        if reaction:
+            asyncio.create_task(
+                self.telegram.set_message_reaction(
+                        message_id=message.message_id,
+                        chat_id=message.chat.id,
+                        reaction=reaction,
+                    )
+            )
 
         return message_tone, reaction

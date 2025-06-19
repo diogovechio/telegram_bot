@@ -269,3 +269,24 @@ class Telegram:
                 }
         ) as resp:
             logging.info(f"{sys._getframe().f_code.co_name} - {resp.status}")
+
+    async def set_message_reaction(
+            self,
+            message_id: int,
+            chat_id: int,
+            reaction=None,
+            sleep_time=0,
+            is_big=True
+    ) -> None:
+        await asyncio.sleep(sleep_time)
+
+        async with self._session.post(
+                url=f"{self._api_route}/setMessageReaction".replace('\n', ''),
+                json={
+                        "chat_id": str(chat_id),
+                        "message_id": message_id,
+                        "reaction": [{"type": "emoji", "emoji": reaction}],
+                        "is_big": is_big
+                    }
+        ) as resp:
+            logging.info(f"{sys._getframe().f_code.co_name} - {resp.status}")

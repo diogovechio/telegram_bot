@@ -78,6 +78,7 @@ class LLM:
                             "model": model,
                             "prompt": prompt,
                             "temperature": temperature,
+                            "max_tokens": 1024,
                         }
 
                     async with self.session.post(

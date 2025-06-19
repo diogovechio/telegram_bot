@@ -11,6 +11,8 @@ from pedro.brain.reactions.fact_check import fact_check_reaction
 from pedro.brain.reactions.images_reactions import images_reaction
 from pedro.brain.reactions.summary_reactions import summary_reaction
 from pedro.brain.reactions.agenda_commands import agenda_commands_reaction
+from pedro.brain.reactions.complain_swearword import complain_swearword_reaction
+from pedro.brain.reactions.emoji_reactions import emoji_reactions
 from pedro.data_structures.telegram_message import Message
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.chat_history import ChatHistory
@@ -37,4 +39,6 @@ async def messages_handler(
             summary_reaction(updated_message, history, telegram, opinions, llm),
             fact_check_reaction(updated_message, history, telegram, opinions, llm),
             agenda_commands_reaction(updated_message, history, telegram, opinions, agenda, llm),
+            complain_swearword_reaction(updated_message, history, telegram, opinions, llm),
+            emoji_reactions(updated_message, history, telegram, opinions, llm),
         )

@@ -5,3 +5,4 @@ pip-system-certs
 schedule
 youtube_transcript_api
 beautifulsoup4
+unidecode
