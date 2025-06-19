@@ -86,7 +86,7 @@ class TelegramBot:
                 self.user_opinion_manager = UserOpinions(self.database, self.llm, chat_history=self.chat_history)
 
                 # Process historical messages for all users
-                self.loop.create_task(self.user_opinion_manager.process_historical_messages())
+                self.loop.create_task(self.user_opinion_manager.get_opinion_by_historical_messages())
 
                 # Initialize and start the scheduler to run process_historical_messages every day at 9 AM
                 self.scheduler = Scheduler(self.user_opinion_manager)

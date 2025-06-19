@@ -25,6 +25,47 @@ from pedro.data_structures.images import MessageImage
 logger = logging.getLogger(__name__)
 
 
+def _friendlier(chat_logs: list[ChatLog]):
+    days_of_week = {
+        0: "Segunda-feira",
+        1: "Terça-feira",
+        2: "Quarta-feira",
+        3: "Quinta-feira",
+        4: "Sexta-feira",
+        5: "Sábado",
+        6: "Domingo"
+    }
+
+    friendly_messages = []
+    current_date = None
+
+    for log in chat_logs:
+        dt = datetime.strptime(log.datetime, DATE_FULL_FORMAT)
+
+        day_of_week = days_of_week[dt.weekday()]
+        date_str = dt.strftime(DATE_FORMAT)
+        time_str = dt.strftime(HOUR_FORMAT)
+
+        message_date = dt.date()
+        if current_date != message_date:
+            current_date = message_date
+
+            date_header = f"--- Conversa de {day_of_week}, dia {date_str} ---"
+            friendly_messages.append(date_header)
+
+        full_name = f"{log.first_name}"
+        if log.last_name:
+            full_name += f" {log.last_name}"
+
+        username_display = f" ({log.username})" if log.username is not None else ""
+        user_id = log.user_id if log.user_id is not None else ""
+
+        friendly_message = f"{time_str} - UserID [{user_id}] - {full_name}{username_display}: {log.message}"
+        friendly_messages.append(friendly_message)
+
+    return "\n".join(friendly_messages)
+
+
 class ChatHistory:
     def __init__(
         self,
@@ -303,9 +344,9 @@ class ChatHistory:
 
         return result
 
-    def get_last_messages(self, chat_id: int, limit: int = 20) -> List[ChatLog]:
+    def get_last_messages(self, chat_id: int, limit: int = 20, days: int=0) -> List[ChatLog]:
         # Get messages using the existing method
-        messages_dict = self.get_messages(chat_id, 0)
+        messages_dict = self.get_messages(chat_id, days)
 
         # Flatten the dictionary into a single list
         all_messages = []
@@ -317,44 +358,48 @@ class ChatHistory:
             return all_messages[-limit:]
         return all_messages
 
-    def get_friendly_last_messages(self, chat_id: int, limit: int = 20) -> str:
-        chat_logs = self.get_last_messages(chat_id, limit)
+    def get_friendly_last_messages(self, chat_id: int, limit: int = 20, days: int=0) -> str:
+        return _friendlier(self.get_last_messages(chat_id, limit, days))
 
-        days_of_week = {
-            0: "Segunda-feira",
-            1: "Terça-feira",
-            2: "Quarta-feira",
-            3: "Quinta-feira",
-            4: "Sexta-feira",
-            5: "Sábado",
-            6: "Domingo"
-        }
+    def get_messages_since_last_from_user(self, chat_id: int, user_id: int, tolerance: int=5) -> List[ChatLog]:
+        # Get all messages for this chat
+        messages_dict = self.get_messages(chat_id, 0, max_messages=100)
 
-        friendly_messages = []
-        current_date = None
+        # Flatten the dictionary into a single list
+        all_messages = []
+        for date_str, chat_logs in messages_dict.items():
+            all_messages.extend(chat_logs)
 
-        for log in chat_logs:
-            dt = datetime.strptime(log.datetime, DATE_FULL_FORMAT)
+        # Sort messages by datetime
+        all_messages.sort(key=lambda log: datetime.strptime(log.datetime, DATE_FULL_FORMAT))
 
-            day_of_week = days_of_week[dt.weekday()]
-            date_str = dt.strftime(DATE_FORMAT)
-            time_str = dt.strftime(HOUR_FORMAT)
+        # Find the index of the last message from the specified user
+        last_user_msg_index = -1
+        for i in range(len(all_messages) - 1, -1, -1):
+            if all_messages[i].user_id == str(user_id):
+                last_user_msg_index = i
+                break
 
-            message_date = dt.date()
-            if current_date != message_date:
-                current_date = message_date
+        # If no message from the user was found, return all messages
+        if last_user_msg_index == -1:
+            return all_messages
 
-                date_header = f"--- Conversa de {day_of_week}, dia {date_str} ---"
-                friendly_messages.append(date_header)
+        # Add tolerance of 5 messages to find a previous message from the user
+        # This prevents returning only the current message when a user asks for messages since their last message
+        previous_user_msg_index = -1
 
-            full_name = f"{log.first_name}"
-            if log.last_name:
-                full_name += f" {log.last_name}"
+        # Start searching from the last message index, skipping at least 'tolerance' messages
+        for i in range(last_user_msg_index - 1, -1, -1):
+            if all_messages[i].user_id == str(user_id) and (last_user_msg_index - i) > tolerance:
+                previous_user_msg_index = i
+                break
 
-            username_display = f" ({log.username})" if log.username is not None else ""
-            user_id = log.user_id if log.user_id is not None else ""
+        # If a previous message with sufficient tolerance was found, use that as the starting point
+        if previous_user_msg_index != -1:
+            return all_messages[previous_user_msg_index:]
 
-            friendly_message = f"{time_str} - UserID [{user_id}] - {full_name}{username_display}: {log.message}"
-            friendly_messages.append(friendly_message)
+        # Otherwise, return all messages after the last message from the user
+        return all_messages[last_user_msg_index:]
 
-        return "\n".join(friendly_messages)
+    def get_friendly_messages_since_last_from_user(self, chat_id: int, user_id: int) -> str:
+        return _friendlier(self.get_messages_since_last_from_user(chat_id, user_id))

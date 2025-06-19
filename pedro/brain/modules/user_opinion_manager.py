@@ -54,6 +54,26 @@ class UserOpinions:
         results = self.database.get_all(self.table_name)
         return [UserOpinion(**data) for data in results]
 
+    def get_users(self) -> List[str]:
+        """
+        Returns a list of usernames from all user opinions.
+        If username is None, uses first_name instead.
+        Ensures usernames have @ prefix if they don't already.
+        """
+        all_users = self.get_all_user_opinions()
+        users = []
+
+        for user in all_users:
+            if user.username:
+                username = user.username
+                if not username.startswith('@'):
+                    username = '@' + username
+                users.append(username)
+            elif user.first_name:
+                users.append(user.first_name)
+
+        return users
+
     def get_users_by_text_match(self, text: str, threshold: float=0.8) -> List[UserOpinion]:
         all_users = self.get_all_user_opinions()
         matching_users = []
@@ -221,7 +241,7 @@ class UserOpinions:
 
         return user_opinion
 
-    async def process_historical_messages(self):
+    async def get_opinion_by_historical_messages(self):
         if not self.chat_history:
             logging.warning("Chat history not available, skipping historical message processing")
             return

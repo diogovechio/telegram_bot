@@ -36,7 +36,7 @@ class Scheduler:
 
     async def _run_process_historical_messages(self):
         logging.info(f"Running scheduled task: process_historical_messages at {self.datetime_manager.now()}")
-        await self.user_opinions.process_historical_messages()
+        await self.user_opinions.get_opinion_by_historical_messages()
 
     async def run_scheduler(self):
         while self.running:
