@@ -42,9 +42,15 @@ async def fact_check_reaction(
     metodológica utilizada."""
 
     with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-        if message.reply_to_message and message.reply_to_message.text:
+        if message.reply_to_message:
+            if message.reply_to_message.text:
+                mentiroso_argument = message.reply_to_message.text
+            elif message.reply_to_message.photo:
+                mentiroso_argument = await history.process_reply_photo(message.reply_to_message)
+            else:
+                return
+
             mentiroso = message.reply_to_message.from_.first_name
-            mentiroso_argument = message.reply_to_message.text
 
             prompt = f"{training_counterpoint} Responda o Argumento de {mentiroso}: '{mentiroso_argument}'"
 

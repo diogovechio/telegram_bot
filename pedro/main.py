@@ -6,6 +6,7 @@ from datetime import datetime
 import json
 import typing as T
 
+from pedro.brain.modules.agenda import AgendaManager
 # External
 
 # Project
@@ -44,6 +45,8 @@ class TelegramBot:
         self.user_opinion_manager: T.Optional[UserOpinions] = None
         self.chat_history: T.Optional[ChatHistory] = None
 
+        self.agenda: AgendaManager | None = None
+
         self.lock = True
 
         self.loop: T.Optional[AbstractEventLoop] = None
@@ -80,6 +83,7 @@ class TelegramBot:
                 self.config: BotConfig = BotConfig(**bot_config)
 
                 self.telegram = Telegram(self.config.secrets.bot_token)
+                self.agenda = AgendaManager(self.telegram)
                 self.llm = LLM(self.config.secrets.openai_key)
                 self.database = Database("database/pedro_database.json")
                 self.chat_history = ChatHistory(telegram=self.telegram, llm=self.llm)
@@ -116,6 +120,7 @@ class TelegramBot:
                                     history=self.chat_history,
                                     opinions=self.user_opinion_manager,
                                     allowed_list=self.allowed_list,
+                                    agenda=self.agenda,
                                     llm=self.llm,
                                 )
                             )

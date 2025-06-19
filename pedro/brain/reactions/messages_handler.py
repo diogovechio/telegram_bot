@@ -1,6 +1,7 @@
 # Internal
 import asyncio
 
+from pedro.brain.modules.agenda import AgendaManager
 # External
 
 
@@ -9,6 +10,7 @@ from pedro.brain.reactions.default_pedro import default
 from pedro.brain.reactions.fact_check import fact_check_reaction
 from pedro.brain.reactions.images_reactions import images_reaction
 from pedro.brain.reactions.summary_reactions import summary_reaction
+from pedro.brain.reactions.agenda_commands import agenda_commands_reaction
 from pedro.data_structures.telegram_message import Message
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.chat_history import ChatHistory
@@ -22,6 +24,7 @@ async def messages_handler(
         history: ChatHistory,
         telegram: Telegram,
         opinions: UserOpinions,
+        agenda: AgendaManager,
         llm: LLM,
         allowed_list: list,
 ) -> None:
@@ -33,4 +36,5 @@ async def messages_handler(
             images_reaction(updated_message, history, telegram, opinions, llm),
             summary_reaction(updated_message, history, telegram, opinions, llm),
             fact_check_reaction(updated_message, history, telegram, opinions, llm),
+            agenda_commands_reaction(updated_message, history, telegram, opinions, agenda, llm),
         )
