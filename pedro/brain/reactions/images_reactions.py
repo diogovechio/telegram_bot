@@ -1,5 +1,6 @@
 # Project
 from pedro.brain.modules.chat_history import ChatHistory
+from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
@@ -19,16 +20,17 @@ async def images_reaction(
         image = await telegram.image_downloader(message)
 
         if image and image_trigger(message):
-            prompt = create_base_prompt(message, history, opinions, total_messages=3)
+            with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
+                prompt = create_base_prompt(message, history, opinions, total_messages=3)
 
-            response = await adjust_pedro_casing(
-                await llm.generate_text(prompt, model="gpt-4.1-mini", image=image)
-            )
+                response = await adjust_pedro_casing(
+                    await llm.generate_text(prompt, model="gpt-4.1-mini", image=image)
+                )
 
-            history.add_message(response, chat_id=message.chat.id, is_pedro=True)
+                await history.add_message(response, chat_id=message.chat.id, is_pedro=True)
 
-            await telegram.send_message(
-                message_text=response,
-                chat_id=message.chat.id,
-                reply_to=message.message_id,
-            )
+                await telegram.send_message(
+                    message_text=response,
+                    chat_id=message.chat.id,
+                    reply_to=message.message_id,
+                )

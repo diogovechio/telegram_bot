@@ -41,7 +41,7 @@ class TelegramBot:
 
         self.database: T.Optional[Database] = None
         self.user_opinion_manager: T.Optional[UserOpinions] = None
-        self.chat_history = ChatHistory()
+        self.chat_history: T.Optional[ChatHistory] = None
 
         self.lock = True
 
@@ -82,6 +82,7 @@ class TelegramBot:
                 self.llm = LLM(self.config.secrets.openai_key)
                 self.database = Database("database/pedro_database.json")
                 self.user_opinion_manager = UserOpinions(self.database, self.llm)
+                self.chat_history = ChatHistory(telegram=self.telegram, llm=self.llm)
 
                 self.allowed_list = [value.id for value in self.config.allowed_ids]
 
@@ -96,7 +97,7 @@ class TelegramBot:
                     message = message.message
 
                     if message and message.chat:
-                        self.chat_history.add_message(message, chat_id=message.chat.id)
+                        await self.chat_history.add_message(message, chat_id=message.chat.id)
                         self.user_opinion_manager.add_user_if_not_exists(message)
 
                         if not self.lock:

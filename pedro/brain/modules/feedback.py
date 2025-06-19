@@ -11,10 +11,10 @@ from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.telegram import Telegram
 
 
-async def _is_taking_too_long(telegram: Telegram, chat_id: int, user="", max_loops=5, timeout=15, memory: T.Optional[ChatHistory] = None):
+async def _is_taking_too_long(telegram: Telegram, chat_id: int, user="", max_loops=5, timeout=5, memory: T.Optional[ChatHistory] = None):
     if user:
-        messages = [f"@{user} pau no seu cu",
-                    f"@{user} foda-se"]
+        messages = [f"@{user} já vou responder",
+                    f"@{user} só 1 minuto"]
 
         for _ in range(max_loops):
             await asyncio.sleep(timeout + int(random.random() * timeout / 5))
@@ -23,7 +23,7 @@ async def _is_taking_too_long(telegram: Telegram, chat_id: int, user="", max_loo
             messages.remove(message)
 
             if memory:
-                memory.add_message(message, chat_id=chat_id)
+                await memory.add_message(message, chat_id=chat_id)
 
             asyncio.create_task(
                 telegram.send_message(

@@ -5,7 +5,7 @@ from pedro.data_structures.telegram_message import Message
 from pedro.utils.text_utils import create_username
 
 
-def create_base_prompt(message: Message, memory: ChatHistory, opinions: UserOpinions, total_messages=10) -> str:
+def create_base_prompt(message: Message, memory: ChatHistory, opinions: UserOpinions, total_messages=15) -> str:
     datetime = DatetimeManager()
 
     chat_history = memory.get_friendly_last_messages(chat_id=message.chat.id, limit=total_messages)

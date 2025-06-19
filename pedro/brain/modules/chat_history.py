@@ -17,6 +17,9 @@ from pedro.utils.text_utils import create_username, list_crop
 from pedro.data_structures.telegram_message import Message, ReplyToMessage
 from pedro.data_structures.chat_log import ChatLog
 from pedro.brain.modules.database import Database
+from pedro.brain.modules.telegram import Telegram
+from pedro.brain.modules.llm import LLM
+from pedro.data_structures.images import MessageImage
 
 
 logger = logging.getLogger(__name__)
@@ -25,6 +28,8 @@ logger = logging.getLogger(__name__)
 class ChatHistory:
     def __init__(
         self,
+        telegram: Telegram = None,
+        llm: LLM = None,
     ):
         self.chat_logs_dir = "database/chat_logs"
 
@@ -33,8 +38,37 @@ class ChatHistory:
 
         self.table_name = "chat_logs"
         self.datetime = DatetimeManager()
+        self.telegram = telegram
+        self.llm = llm
 
-    def add_message(self, message: Message | ReplyToMessage | str, chat_id: int, is_pedro: bool = False):
+    async def process_image(self, message: Message) -> str:
+        if not self.telegram or not self.llm:
+            logger.warning("Telegram or LLM not provided, cannot process image")
+            return message.text or message.caption or ""
+
+        if not message.photo:
+            return message.text or message.caption or ""
+
+        try:
+            image = await self.telegram.image_downloader(message)
+            if not image:
+                logger.warning("Failed to download image")
+                return message.text or message.caption or ""
+
+            prompt = "Descreva a imagem com o máximo de detalhes identificáveis"
+            description = await self.llm.generate_text(prompt=prompt, image=image)
+
+            formatted_text = f"[[IMAGEM ANEXADA: {description} ]]"
+
+            if message.caption:
+                formatted_text = f"{message.caption}\n\n{formatted_text}"
+
+            return formatted_text
+        except Exception as e:
+            logger.exception(f"Error processing image: {e}")
+            return message.text or message.caption or ""
+
+    async def add_message(self, message: Message | ReplyToMessage | str, chat_id: int, is_pedro: bool = False):
         # Format the date as a string (DD-MM-YYYY)
         date_str = self.datetime.get_current_date_str()
 
@@ -57,7 +91,13 @@ class ChatHistory:
             username = message.from_.username or create_username(message.from_.first_name, message.from_.last_name)
             first_name = message.from_.first_name or ""
             last_name = message.from_.last_name or ""
-            message_text = message.text or message.caption or ""
+
+            # Check if message has a photo and process it
+            if message.photo and self.telegram and self.llm:
+                message_text = await self.process_image(message)
+            else:
+                message_text = message.text or message.caption or ""
+
             message_datetime = self.datetime.now()
 
             chat_log = ChatLog(
