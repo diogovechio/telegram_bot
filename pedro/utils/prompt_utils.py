@@ -60,7 +60,7 @@ async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: U
             if user_opinion.opinions:
                 user_opinions_text = "\n".join(user_opinion.opinions)
                 user_display_name = create_username(user_opinion.first_name, user_opinion.username)
-                opinions_text += f"Opiniões de Pedro sobre {user_display_name}: \n{user_opinions_text}\n\n"
+                opinions_text += f"Opiniões de Pedro sobre {user_opinion.first_name} - {user_display_name}: \n{user_opinions_text}\n\n"
 
     return base_prompt + basic_opinions + opinions_text + chat_history + reply_text + f"\n{datetime.get_current_time_str()} - UserID [0] - Pedro (pedroleblonbot): "
 
