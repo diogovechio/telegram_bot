@@ -1,6 +1,6 @@
 import random
 
-from pedro.brain.constants.constants import BASIC_OPINIONS
+from pedro.brain.constants.constants import POLITICAL_OPINIONS, POLITICAL_WORDS
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.datetime_manager import DatetimeManager
 from pedro.brain.modules.user_opinion_manager import UserOpinions
@@ -29,10 +29,12 @@ async def process_reply_message(message: Message, memory: ChatHistory) -> str:
 async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: UserOpinions | None, total_messages=15) -> str:
     datetime = DatetimeManager()
 
-    basic_opinions = "\n".join(BASIC_OPINIONS)
-    basic_opinions = f"{basic_opinions}\n\n"
-
     chat_history = memory.get_friendly_last_messages(chat_id=message.chat.id, limit=total_messages)
+
+    political_opinions = ""
+    if any(political_word.lower() in chat_history.lower() for political_word in POLITICAL_WORDS):
+        political_opinions = "\n".join(POLITICAL_OPINIONS)
+        political_opinions = f"{political_opinions}\n\n"
 
     if opinions:
         users_opinions = opinions.get_users_by_text_match(chat_history)
@@ -65,7 +67,7 @@ async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: U
                 user_opinions_text = "\n".join([f"Sobre {user_display_name}: {opinion}" for opinion in user_opinion.opinions])
                 opinions_text += f"### RESPONDA COM BASE NAS INFORMAÇÕES A SEGUIR SE FOR PERGUNTADO SOBRE ***{user_display_name}*** ### \n{user_opinions_text}\n\n"
 
-    return base_prompt + basic_opinions + opinions_text + chat_history + reply_text + f"\n{datetime.get_current_time_str()} - UserID [0] - Pedro (pedroleblonbot): "
+    return base_prompt + political_opinions + opinions_text + chat_history + reply_text + f"\n{datetime.get_current_time_str()} - UserID [0] - Pedro (pedroleblonbot): "
 
 
 def text_trigger(message: Message) -> bool:
