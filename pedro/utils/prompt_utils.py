@@ -17,13 +17,14 @@ async def process_reply_message(message: Message, memory: ChatHistory) -> str:
 
     reply = message.reply_to_message
     sender_name = create_username(reply.from_.first_name, reply.from_.username) if reply.from_ else "Unknown"
+    sender_name = f"{reply.from_.first_name} - {sender_name}"
 
     if reply.photo:
         image_description = await memory.process_photo(reply)
-        return f"... (em resposta à imagem enviada por {sender_name}: {image_description})"
+        return f" ->> [... {sender_name} havia enviado a imagem: {image_description} ]"
     else:
         reply_text = reply.text or ""
-        return f"... (em resposta a mensagem enviada por {sender_name}: [[{reply_text}]] )"
+        return f" ->>  [... {sender_name} havia dito anteriormente: [[{reply_text}]] ]"
 
 
 async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: UserOpinions | None, total_messages=15) -> str:
