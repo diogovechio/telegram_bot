@@ -31,10 +31,11 @@ def call_async_function(func):
 
 
 class Scheduler:
-    def __init__(self, user_opinions: UserOpinions, telegram: Telegram):
+    def __init__(self, user_opinions: UserOpinions, telegram: Telegram, daily_flags=None):
         self.user_opinions = user_opinions
         self.datetime_manager = DatetimeManager()
         self.telegram = telegram
+        self.daily_flags = daily_flags
         self.running = False
 
     async def _run_process_historical_messages(self):
@@ -51,6 +52,15 @@ class Scheduler:
             chat_id=8375482,
             caption="Daily DB Backup"
         )
+
+    async def _reset_daily_flags(self):
+        """Reset all daily flags to False at 5 AM."""
+        if self.daily_flags:
+            logging.info(f"Running scheduled task: reset_daily_flags at {self.datetime_manager.now()}")
+            self.daily_flags.swearword_complain_today = False
+            self.daily_flags.swearword_random_reaction_today = False
+            self.daily_flags.random_talk_today = False
+            logging.info("All daily flags have been reset to False")
 
     async def run_scheduler(self):
         while self.running:
@@ -77,11 +87,14 @@ class Scheduler:
             self._run_process_historical_messages
         )
 
-        schedule.every().day.at(
-            _convert_hour_if_needed("21:00")
-        ).do(
+        schedule.every().day.at(_convert_hour_if_needed("21:00")).do(
             call_async_function,
             self._run_database_backup
+        )
+
+        schedule.every().day.at(_convert_hour_if_needed("19:00")).do(
+            call_async_function,
+            self._reset_daily_flags
         )
 
         self.running = True

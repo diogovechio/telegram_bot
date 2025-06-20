@@ -11,6 +11,7 @@ from pedro.brain.modules.agenda import AgendaManager
 
 # Project
 from pedro.data_structures.bot_config import BotConfig
+from pedro.data_structures.daily_flags import DailyFlags
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.reactions.messages_handler import messages_handler
@@ -48,6 +49,12 @@ class TelegramBot:
         self.agenda: AgendaManager | None = None
 
         self.lock = True
+
+        self.daily_flags = DailyFlags(
+            swearword_complain_today=False,
+            swearword_random_reaction_today=False,
+            random_talk_today=False
+        )
 
         self.loop: T.Optional[AbstractEventLoop] = None
 
@@ -92,9 +99,9 @@ class TelegramBot:
                 # Process historical messages for all users
                 self.loop.create_task(self.user_opinion_manager.get_opinion_by_historical_messages())
 
-                # Initialize and start the scheduler to run process_historical_messages every day at 9 AM
-                # and database backup every day at 21:00
-                self.scheduler = Scheduler(self.user_opinion_manager, self.telegram)
+                # Initialize and start the scheduler to run process_historical_messages every day at 9 AM,
+                # database backup every day at 21:00, and reset daily flags at 5 AM
+                self.scheduler = Scheduler(self.user_opinion_manager, self.telegram, self.daily_flags)
                 self.scheduler.start()
 
                 self.allowed_list = [value.id for value in self.config.allowed_ids]
@@ -123,6 +130,7 @@ class TelegramBot:
                                     allowed_list=self.allowed_list,
                                     agenda=self.agenda,
                                     llm=self.llm,
+                                    daily_flags=self.daily_flags,
                                 )
                             )
 

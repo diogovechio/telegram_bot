@@ -1,9 +1,12 @@
 # Project
+import random
+
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.data_structures.daily_flags import DailyFlags
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.prompt_utils import create_basic_prompt, text_trigger
 from pedro.utils.text_utils import adjust_pedro_casing
@@ -15,8 +18,9 @@ async def default(
         telegram: Telegram,
         opinions: UserOpinions,
         llm: LLM,
+        daily_flags: DailyFlags,
 ) -> None:
-    if text_trigger(message=message):
+    if text_trigger(message=message, daily_flags=daily_flags):
         await opinions.adjust_mood(message)
 
         with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):

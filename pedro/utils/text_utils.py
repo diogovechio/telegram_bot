@@ -1,8 +1,12 @@
 # Internal
+import json
+import logging
 from datetime import datetime
 import math
 import random
 import re
+
+import aiohttp
 
 # Project
 from pedro.brain.constants.constants import DATE_FULL_FORMAT, HOUR_FORMAT, DATE_FORMAT
@@ -166,3 +170,22 @@ def friendly_chat_log(chat_logs: list[ChatLog]):
         friendly_messages.append(friendly_message)
 
     return "\n".join(friendly_messages)
+
+
+async def get_roletas_from_pavuna(
+        min_chars=0,
+) -> list[str]:
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://keyo.me/bot/roleta.json") as roleta:
+                return [
+                        value["text"] for _, value in json.loads(
+                            await roleta.content.read()
+                        ).items()
+                        if value['text'] is not None and len(value['text']) > min_chars
+                    ]
+    except Exception as exc:
+        logging.exception(exc)
+
+        return []
+

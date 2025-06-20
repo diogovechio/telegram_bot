@@ -6,6 +6,7 @@ from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.datetime_manager import DatetimeManager
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.data_structures.daily_flags import DailyFlags
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.text_utils import create_username
 import logging
@@ -128,13 +129,18 @@ async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: U
     return prompt
 
 
-def text_trigger(message: Message) -> bool:
+def text_trigger(message: Message, daily_flags: DailyFlags) -> bool:
+    if random.random() < 0.15 and not daily_flags.random_talk_today:
+        daily_flags.random_talk_today = True
+
+        return True
+
     return (
             message.text and
             (message.text.lower().startswith("pedro") or message.text.lower().replace("?", "").strip().endswith(
                 "pedro"))
     ) or (
-            message.reply_to_message and "pedro" in message.reply_to_message.from_.username
+            message.reply_to_message and "pedro" in message.reply_to_message.from_.username and not message.text.startswith("/")
     )
 
 def image_trigger(message: Message) -> bool:
