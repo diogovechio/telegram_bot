@@ -377,10 +377,10 @@ class UserOpinions:
         reaction = ""
 
         if message_tone == 5:
-            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=10.0)
+            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=2.0)
             reaction = "🖕"
         if message_tone == 4:
-            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=2.5)
+            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=0.5)
             reaction = random.choice(["🤬", "😡"])
 
         if message_tone == 2:

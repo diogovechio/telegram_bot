@@ -117,7 +117,7 @@ async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: U
                 user_opinions_text = "\n".join([f"Sobre {user_display_name}: {opinion[:100]}" for opinion in user_opinion.opinions])
                 opinions_text += f"### RESPONDA COM BASE NAS INFORMAÇÕES A SEGUIR SE FOR PERGUNTADO SOBRE ***{user_display_name}*** ### \n{user_opinions_text}\n\n"
 
-    prompt = base_prompt + political_opinions + opinions_text + chat_history + reply_text + f"\n{datetime.get_current_time_str()} - UserID [0] - Pedro (pedroleblonbot): "
+    prompt = base_prompt + political_opinions + opinions_text + chat_history + reply_text + f"\n{datetime.get_current_time_str()} - Pedro (pedroleblonbot): "
 
     if telegram:
         asyncio.create_task(send_telegram_log(

@@ -69,6 +69,7 @@ async def handle_command_with_parameters(
     days = int(days_match.group(0)) if days_match else days
 
     search_text = message.text.replace(first_text, "").strip().lower()
+    search_text = search_text.replace(str(days), "").strip()
 
     if search_text.startswith("@"):
         search_text = search_text.replace("@", "")
@@ -76,10 +77,14 @@ async def handle_command_with_parameters(
     chat_history = history.get_friendly_last_messages(
         chat_id=message.chat.id,
         days=days,
-        limit=200
+        limit=150
     )
 
-    prompt = f'resuma o que foi falado sobre o tema "{search_text}" na conversa abaixo'
+    if search_text:
+        prompt = f'resuma o que foi falado sobre o tema "{search_text}" na conversa abaixo'
+    else:
+        prompt = f'resuma o que foi falado na conversa abaixo'
+
     if topics:
         prompt = "em no máximo 7 tópicos de no máximo 6 palavras cada, " + prompt
 
@@ -211,7 +216,7 @@ async def summary_reaction(
     with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
         if message.reply_to_message:
             summary = await handle_reply_to_message(message, history, telegram, llm, topics)
-        elif " " in message.text:
+        elif " " in message.text or any(letter.isdigit() for letter in message.text):
             summary = await handle_command_with_parameters(message, history, telegram, opinions, llm, topics, days)
         else:
             summary = await handle_basic_summarization(message, history, telegram, llm, topics, days)

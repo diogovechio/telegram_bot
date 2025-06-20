@@ -39,7 +39,6 @@ async def complain_swearword_reaction(
         return
 
     mock_message = ""
-    reply = None
 
     if random.random() < 0.25 and not daily_flags.swearword_complain_today:
         daily_flags.swearword_complain_today = True
@@ -62,7 +61,14 @@ async def complain_swearword_reaction(
             )
 
             mock_message = await adjust_pedro_casing(mock_message)
-            reply = message.message_id
+
+            await history.add_message(mock_message, chat_id=message.chat.id, is_pedro=True)
+            await telegram.send_message(
+                message_text=mock_message,
+                chat_id=message.chat.id,
+                reply_to=message.message_id,
+                sleep_time=1 + (round(random.random()) * 4)
+            )
 
     if random.random() < 0.25 and not daily_flags.swearword_random_reaction_today:
         random_messages = await get_roletas_from_pavuna()
@@ -73,13 +79,13 @@ async def complain_swearword_reaction(
         daily_flags.swearword_random_reaction_today = True
         mock_message = random.choice(random_messages)
 
-    if not mock_message:
-        return
-
-    await history.add_message(mock_message, chat_id=message.chat.id, is_pedro=True)
-    await telegram.send_message(
+        await history.add_message(mock_message, chat_id=message.chat.id, is_pedro=True)
+        await telegram.send_message(
             message_text=mock_message,
             chat_id=message.chat.id,
-            reply_to=reply,
+            reply_to=None,
             sleep_time=1 + (round(random.random()) * 4)
-    )
+        )
+
+    if not mock_message:
+        return

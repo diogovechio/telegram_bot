@@ -156,7 +156,7 @@ def friendly_chat_log(chat_logs: list[ChatLog]):
         if current_date != message_date:
             current_date = message_date
 
-            date_header = f"--- Conversa de {day_of_week}, dia {date_str} ---"
+            date_header = f"\n\n--- Conversa de {day_of_week}, dia {date_str} ---"
             friendly_messages.append(date_header)
 
         full_name = f"{log.first_name}"
@@ -166,7 +166,7 @@ def friendly_chat_log(chat_logs: list[ChatLog]):
         username_display = f" ({log.username})" if log.username is not None else ""
         user_id = log.user_id if log.user_id is not None else ""
 
-        friendly_message = f"{time_str} - UserID [{user_id}] - {full_name}{username_display}: {log.message}"
+        friendly_message = f"{time_str} - {full_name}{username_display}: {log.message}"
         friendly_messages.append(friendly_message)
 
     return "\n".join(friendly_messages)
