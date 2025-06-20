@@ -189,7 +189,7 @@ class UserOpinions:
     async def add_opinion_by_message_tone(self, text: str, message: Message) -> Optional[UserOpinion]:
         prompt = (f"Dada a mensagem '{text}' enviada por "
                   f"{create_username(first_name=message.from_.first_name, username=message.from_.username)}, "
-                  f"resuma em poucas palavras a sua opinião ou o que identificou sobre ele."
+                  f"resuma de maneira sucinta, em no máximo 8 palavras, a sua opinião ou o que identificou sobre ele."
                   f" Caso seja incapaz de gerar alguma opinião ou observação com base na"
                   f" mensagem fornecida, não peça mais informações, apenas retorne '###NONE###'.")
 

@@ -62,9 +62,17 @@ class Scheduler:
             logging.warning("Scheduler is already running")
             return
 
-        schedule.every().day.at(
-            _convert_hour_if_needed("09:00")
-        ).do(
+        schedule.every().day.at(_convert_hour_if_needed("09:00")).do(
+            call_async_function,
+            self._run_process_historical_messages
+        )
+
+        schedule.every().day.at(_convert_hour_if_needed("15:00")).do(
+            call_async_function,
+            self._run_process_historical_messages
+        )
+
+        schedule.every().day.at(_convert_hour_if_needed("22:00")).do(
             call_async_function,
             self._run_process_historical_messages
         )
