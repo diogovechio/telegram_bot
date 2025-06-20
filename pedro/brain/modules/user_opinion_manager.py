@@ -95,43 +95,28 @@ class UserOpinions:
             if user.first_name and not user_added:
                 first_name_lower = user.first_name.lower()
 
-                # Direct comparison with the entire text
-                similarity = SequenceMatcher(None, first_name_lower, text_lower).ratio()
-                if similarity >= threshold:
-                    matching_users.append(user)
-                    user_added = True
-                    continue
-
-                # Check if text is long enough to contain first_name
-                if len(text_lower) >= len(first_name_lower):
-                    # Check if first_name is similar to any part of the text
-                    for i in range(len(text_lower) - len(first_name_lower) + 1):
-                        text_substring = text_lower[i:i+len(first_name_lower)]
-                        similarity = SequenceMatcher(None, first_name_lower, text_substring).ratio()
-                        if similarity >= threshold:
-                            matching_users.append(user)
-                            user_added = True
-                            break
+                for word in text_lower.split():
+                    similarity = SequenceMatcher(None, first_name_lower, word).ratio()
+                    if similarity >= threshold:
+                        matching_users.append(user)
+                        user_added = True
+                        continue
+                    if user_added:
+                        break
 
             # Check if user has a username and hasn't been added yet
             if user.username and not user_added:
                 username_lower = user.username.lower()
 
-                # Direct comparison with the entire text
-                similarity = SequenceMatcher(None, username_lower, text_lower).ratio()
-                if similarity >= 0.8:
-                    matching_users.append(user)
-                    continue
-
-                # Check if text is long enough to contain username
-                if len(text_lower) >= len(username_lower):
-                    # Check if username is similar to any part of the text
-                    for i in range(len(text_lower) - len(username_lower) + 1):
-                        text_substring = text_lower[i:i+len(username_lower)]
-                        similarity = SequenceMatcher(None, username_lower, text_substring).ratio()
-                        if similarity >= threshold:
-                            matching_users.append(user)
-                            break
+                for word in text_lower.split():
+                    # Direct comparison with the entire text
+                    similarity = SequenceMatcher(None, username_lower, word).ratio()
+                    if similarity >= threshold:
+                        matching_users.append(user)
+                        user_added = True
+                        continue
+                    if user_added:
+                        break
 
         return matching_users
 

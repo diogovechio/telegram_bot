@@ -26,7 +26,7 @@ async def default(
             prompt = await create_basic_prompt(
                 message, history,
                 opinions=None if web_search else opinions,
-                total_messages=3 if web_search else 15
+                total_messages=3 if web_search else 10
             )
 
             response = await adjust_pedro_casing(
