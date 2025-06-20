@@ -1,3 +1,5 @@
+import random
+
 from pedro.brain.constants.constants import BASIC_OPINIONS
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.datetime_manager import DatetimeManager
@@ -58,9 +60,10 @@ async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: U
     if opinions:
         for user_opinion in users_opinions:
             if user_opinion.opinions:
-                user_opinions_text = "\n".join(user_opinion.opinions)
                 user_display_name = create_username(user_opinion.first_name, user_opinion.username)
-                opinions_text += f"Opiniões de Pedro sobre {user_opinion.first_name} - {user_display_name}: \n{user_opinions_text}\n\n"
+                user_display_name = f"{user_opinion.first_name} - {user_display_name}"
+                user_opinions_text = "\n".join([f"Sobre {user_display_name}: {opinion}" for opinion in user_opinion.opinions])
+                opinions_text += f"### RESPONDA COM BASE NAS INFORMAÇÕES A SEGUIR SE FOR PERGUNTADO SOBRE ***{user_display_name}*** ### \n{user_opinions_text}\n\n"
 
     return base_prompt + basic_opinions + opinions_text + chat_history + reply_text + f"\n{datetime.get_current_time_str()} - UserID [0] - Pedro (pedroleblonbot): "
 
