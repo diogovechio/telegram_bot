@@ -41,7 +41,7 @@ async def complain_swearword_reaction(
     mock_message = ""
     reply = None
 
-    if random.random() < 0.1 and not daily_flags.swearword_complain_today:
+    if random.random() < 0.25 and not daily_flags.swearword_complain_today:
         daily_flags.swearword_complain_today = True
         prompts = {
             'critique': 'Critique o linguajar dessa mensagem:',
@@ -64,7 +64,7 @@ async def complain_swearword_reaction(
             mock_message = await adjust_pedro_casing(mock_message)
             reply = message.message_id
 
-    if random.random() < 0.1 and not daily_flags.swearword_random_reaction_today:
+    if random.random() < 0.25 and not daily_flags.swearword_random_reaction_today:
         random_messages = await get_roletas_from_pavuna()
 
         if not random_messages:

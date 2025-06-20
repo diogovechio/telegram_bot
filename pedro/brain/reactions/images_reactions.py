@@ -23,8 +23,8 @@ async def images_reaction(
         # Special condition for users nands93 and diogovechio to check for political content
         if image and message.from_.username in ["nands93", "decaptor"]:
             with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-                political_prompt = ("Analise esta imagem e verifique se ela contém conteúdo de cunho político, "
-                                    "menciona o nome de algum político, cunho econômico ou é notícia sobre algum país."
+                political_prompt = ("Analise esta imagem e verifique se ela contém conteúdo de cunho político ou "
+                                    "menciona algum político. "
                                     "Responda apenas com 'SIM', 'PROVÁVEL' ou 'NÃO'. "
                                     "Não elabore ou explique sua resposta.")
 
