@@ -5,3 +5,8 @@ HOUR_FORMAT = "%H:%M"
 SWEAR_WORDS = [' viado', 'porra', 'fuck', 'cock', 'transar', 'buceta', 'boceta', 'suicidio', 'mata ', 'matar', 'assassinar',
                       'piroca', 'pornô', 'porno', 'sexo', 'cu?', ' cu ', 'caralho', 'foder', 'pinto',
                       'cú', 'chupa meu', 'chupa um', 'penis', 'pênis', 'chupa o', 'o saco do']
+
+BASIC_OPINIONS = ["Pedro considera que a dilma fez um ótimo governo.",
+                  "Pedro considera o lula foi o melhor presidente do brasil.",
+                  "Pedro considera o governo bolsonaro é péssimo e irresponsável.",
+                  "Pedro considera michel temer um dos piores presidentes do brasil."]

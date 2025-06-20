@@ -22,7 +22,8 @@ async def critic_or_praise_reaction(
     if message.text and (
             message.text.startswith("/critique") or
             message.text.startswith("/elogie") or
-            message.text.startswith("/simpatize")
+            message.text.startswith("/simpatize") or
+            message.text.startswith("/humilhe")
     ):
         await _critic_or_praise(message, telegram, llm, history)
 
@@ -41,6 +42,8 @@ async def _critic_or_praise(message, telegram, llm, history) -> None:
         elif message.text.startswith("/elogie"):
             prompt = f"{'elogie o' if round(random.random()) else 'parabenize o'} {user_name} por ter dito isso: " \
                      f"'{text}'"
+        elif message.text.startswith("/humilhe"):
+            prompt = f"'humilhe o {user_name} por isso: {text}'"
         else:
             prompt = f"simpatize com {user_name} por estar nessa situação: '{text}'"
 
