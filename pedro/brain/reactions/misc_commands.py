@@ -57,12 +57,12 @@ async def handle_me_command(
     if user_opinions and llm:
         opinions_text = "\n- ".join(user_opinions)
         prompt = (f"Com base nas seguintes informações sobre {username}:\n- {opinions_text}\n\n"
-                  f"Diga a ele, em uma frase curta (máximo 8 palavras), o que você pensa ou sabe sobre ele.")
+                  f"Diga a ele, em uma frase curta (máximo 10 palavras), o que você pensa ou sabe sobre ele.")
 
         opinion_message = (await llm.generate_text(
             prompt=prompt,
             temperature=1.0,
-            model="gpt-3.5-turbo-instruct"
+            model="gpt-4.1-mini"
         )).replace("\n", "")
 
     await telegram.send_message(
