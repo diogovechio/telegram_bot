@@ -94,7 +94,7 @@ async def get_forecast(config: BotConfig, place: T.Optional[str], days: T.Option
                         # Format the forecast line
                         forecast_line = (
                             f"{date_str} ⬇{min_temp}º ⬆{max_temp}º {weather_icon}{high_temp_icon}{ultra_high_temp_icon} - "
-                            f"Sensação {feels_like}º - {day_of_week}"
+                            f"🌡️: {feels_like}º - {day_of_week}"
                         )
 
                         forecast_lines.append(forecast_line)
