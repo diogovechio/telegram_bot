@@ -5,7 +5,7 @@ from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.daily_flags import DailyFlags
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.prompt_utils import create_basic_prompt, text_trigger, check_web_search
@@ -16,12 +16,12 @@ async def default(
         message: Message,
         history: ChatHistory,
         telegram: Telegram,
-        opinions: UserOpinions,
+        user_data: UserDataManager,
         llm: LLM,
         daily_flags: DailyFlags,
 ) -> None:
     if text_trigger(message=message, daily_flags=daily_flags):
-        await opinions.adjust_mood(message)
+        await user_data.adjust_mood(message)
 
         with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
             web_search = check_web_search(message)
@@ -29,7 +29,7 @@ async def default(
 
             prompt = await create_basic_prompt(
                 message, history,
-                opinions=None if web_search else opinions,
+                opinions=None if web_search else user_data,
                 total_messages=3 if web_search else 10,
                 telegram=telegram
             )

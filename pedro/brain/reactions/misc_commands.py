@@ -4,11 +4,12 @@ import logging
 import random
 
 # Project
+from pedro.__version__ import __version__
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.text_utils import create_username
 
@@ -22,24 +23,26 @@ async def misc_commands_reaction(
         message: Message,
         history: ChatHistory,
         telegram: Telegram,
-        opinions: UserOpinions,
+        user_data: UserDataManager,
         llm: LLM,
 ) -> None:
     if message.text:
         if message.text.startswith("/me"):
-            await handle_me_command(message, telegram, opinions, llm)
+            await handle_me_command(message, telegram, user_data, llm)
         elif message.text.startswith('/del') and message.reply_to_message:
             await handle_del_command(message, telegram, llm)
         elif message.text.startswith('/data'):
             await handle_data_command(telegram)
         elif message.text.startswith('/puto'):
-            await handle_puto_command(message, telegram, opinions, llm)
+            await handle_puto_command(message, telegram, user_data, llm)
+        elif message.text.startswith('/version'):
+            await handle_version_command(message, telegram)
 
 
 async def handle_me_command(
     message: Message,
     telegram: Telegram,
-    opinions: UserOpinions,
+    user_data: UserDataManager,
     llm: LLM = None,
 ) -> None:
     """Handle the /me command, showing user ID, chat ID, and mood score."""
@@ -47,7 +50,7 @@ async def handle_me_command(
     user_opinions = []
 
     username = create_username(message.from_.first_name, message.from_.username)
-    for user_opinion in opinions.get_all_user_opinions():
+    for user_opinion in user_data.get_all_user_opinions():
         user_name = create_username(user_opinion.first_name, user_opinion.username)
         if username == user_name:
             user_mood = round(user_opinion.my_mood_with_him, 2)
@@ -57,12 +60,12 @@ async def handle_me_command(
     if user_opinions and llm:
         opinions_text = "\n- ".join(user_opinions)
         prompt = (f"Com base nas seguintes informações sobre {username}:\n- {opinions_text}\n\n"
-                  f"Diga a ele, em uma frase curta (máximo 8 palavras), o que você pensa ou sabe sobre ele.")
+                  f"Diga a ele, em uma frase curta (máximo 10 palavras), o que você pensa ou sabe sobre ele.")
 
         opinion_message = (await llm.generate_text(
             prompt=prompt,
             temperature=1.0,
-            model="gpt-3.5-turbo-instruct"
+            model="gpt-4.1-mini"
         )).replace("\n", "")
 
     await telegram.send_message(
@@ -144,17 +147,31 @@ async def handle_data_command(
     )
 
 
+async def handle_version_command(
+    message: Message,
+    telegram: Telegram,
+) -> None:
+    """Handle the /version command, displaying the bot's version information."""
+    await telegram.send_message(
+        message_text=f"*Pedro Bot v{__version__}*\n"
+                     f"Running the latest and greatest version of Pedro Bot.",
+        chat_id=message.chat.id,
+        reply_to=message.message_id,
+        parse_mode="Markdown"
+    )
+
+
 async def handle_puto_command(
     message: Message,
     telegram: Telegram,
-    opinions: UserOpinions,
+    user_data: UserDataManager,
     llm: LLM,
 ) -> None:
     username = create_username(message.from_.first_name, message.from_.username)
 
     # Get user mood
     user_mood = 0
-    for user_opinion in opinions.get_all_user_opinions():
+    for user_opinion in user_data.get_all_user_opinions():
         user_name = create_username(user_opinion.first_name, user_opinion.username)
         if username == user_name:
             user_mood = round(user_opinion.my_mood_with_him, 2)
@@ -175,7 +192,7 @@ async def handle_puto_command(
 
         if message.text.startswith('/putos'):
             persons = ""
-            for user_opinion in opinions.get_all_user_opinions():
+            for user_opinion in user_data.get_all_user_opinions():
                 mood = user_opinion.my_mood_with_him
                 if mood > 3:
                     user_name = create_username(user_opinion.first_name, user_opinion.username)

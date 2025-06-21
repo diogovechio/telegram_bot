@@ -8,7 +8,7 @@ from datetime import datetime
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.datetime_manager import DatetimeManager
 from pedro.brain.modules.telegram import Telegram
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.agenda import AgendaManager
 from pedro.data_structures.telegram_message import Message
@@ -37,21 +37,10 @@ async def agenda_commands_reaction(
     message: Message,
     history: ChatHistory,
     telegram: Telegram,
-    opinions: UserOpinions,
+    user_data: UserDataManager,
     agenda_manager: AgendaManager,
     llm: LLM,
 ) -> None:
-    """
-    Handle agenda-related commands.
-
-    Args:
-        message: The message to process
-        history: Chat history manager
-        telegram: Telegram API wrapper
-        opinions: User opinions manager
-        llm: Language model manager
-        :param agenda_manager:
-    """
     now = DatetimeManager().now()
 
     # Check which command was triggered

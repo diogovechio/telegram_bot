@@ -6,14 +6,15 @@ from typing import List, Optional
 from pydantic.dataclasses import dataclass
 
 @dataclass
-class UserOpinion:
+class UserData:
     user_id: int
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     opinions: List[str] = None
     my_mood_with_him: float = 0.0
-    
+    last_weather_location: Optional[str] = None
+
     def __post_init__(self):
         if self.opinions is None:
             self.opinions = []

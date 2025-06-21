@@ -7,7 +7,7 @@ from unidecode import unidecode
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.telegram_message import Message
 
 
@@ -43,7 +43,7 @@ async def emoji_reactions(
     message: Message,
     history: ChatHistory,
     telegram: Telegram,
-    opinions: UserOpinions,
+    user_data: UserDataManager,
     llm: LLM,
 ) -> None:
     if await political_trigger(message):

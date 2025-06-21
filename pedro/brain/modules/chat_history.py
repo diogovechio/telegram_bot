@@ -204,54 +204,57 @@ class ChatHistory:
         if not os.path.exists(chat_id_dir):
             return result
 
-        for filename in os.listdir(chat_id_dir):
-            if filename.endswith('.json'):
-                try:
-                    # Parse the date from the filename
-                    date_str = filename[:-5]  # Remove .json extension
-                    date_obj = datetime.strptime(date_str, DATE_FORMAT).replace(tzinfo=timezone(timedelta(hours=-3)))
+        # Get all JSON files and sort them by date (oldest to newest)
+        json_files = [f for f in os.listdir(chat_id_dir) if f.endswith('.json')]
+        json_files.sort(key=lambda x: datetime.strptime(x[:-5], DATE_FORMAT))
 
-                    # Check if the date is within the range
-                    if date_obj >= start_date:
-                        # Create a database object for this file
-                        db_path = os.path.join(chat_id_dir, filename)
-                        db = Database(db_path)
+        for filename in json_files:
+            try:
+                # Parse the date from the filename
+                date_str = filename[:-5]  # Remove .json extension
+                date_obj = datetime.strptime(date_str, DATE_FORMAT).replace(tzinfo=timezone(timedelta(hours=-3)))
 
-                        # Search for messages
-                        chat_results = db.search(self.table_name, {"chat_id": chat_id})
+                # Check if the date is within the range
+                if date_obj >= start_date:
+                    # Create a database object for this file
+                    db_path = os.path.join(chat_id_dir, filename)
+                    db = Database(db_path)
 
-                        if chat_results:
-                            chat_data = chat_results[0]
+                    # Search for messages
+                    chat_results = db.search(self.table_name, {"chat_id": chat_id})
 
-                            # Extract logs
-                            if "logs" in chat_data:
-                                logs = chat_data["logs"]
+                    if chat_results:
+                        chat_data = chat_results[0]
 
-                                # Convert logs to ChatLog objects
-                                chat_logs = []
-                                for log_dict in logs:
-                                    # Convert datetime string to datetime object if it's a string
-                                    dt = log_dict["datetime"]
+                        # Extract logs
+                        if "logs" in chat_data:
+                            logs = chat_data["logs"]
 
-                                    chat_log = ChatLog(
-                                        user_id=log_dict["user_id"],
-                                        username=log_dict["username"],
-                                        first_name=log_dict["first_name"],
-                                        last_name=log_dict["last_name"],
-                                        datetime=dt,
-                                        message=log_dict["message"]
-                                    )
-                                    chat_logs.append(chat_log)
+                            # Convert logs to ChatLog objects
+                            chat_logs = []
+                            for log_dict in logs:
+                                # Convert datetime string to datetime object if it's a string
+                                dt = log_dict["datetime"]
 
-                                if chat_logs:
-                                    chat_logs.sort(key=lambda log: datetime.strptime(log.datetime, DATE_FULL_FORMAT))
-                                    result[date_str] = chat_logs
+                                chat_log = ChatLog(
+                                    user_id=log_dict["user_id"],
+                                    username=log_dict["username"],
+                                    first_name=log_dict["first_name"],
+                                    last_name=log_dict["last_name"],
+                                    datetime=dt,
+                                    message=log_dict["message"]
+                                )
+                                chat_logs.append(chat_log)
 
-                        db.close()
+                            if chat_logs:
+                                chat_logs.sort(key=lambda log: datetime.strptime(log.datetime, DATE_FULL_FORMAT))
+                                result[date_str] = chat_logs
 
-                except Exception as exc:
-                    logger.exception(f"Error parsing date from filename: {filename} - {exc}")
-                    continue
+                    db.close()
+
+            except Exception as exc:
+                logger.exception(f"Error parsing date from filename: {filename} - {exc}")
+                continue
 
         if max_messages and result:
             # Count total messages across all lists

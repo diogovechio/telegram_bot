@@ -9,7 +9,7 @@ import re
 import aiohttp
 
 # Project
-from pedro.brain.constants.constants import DATE_FULL_FORMAT, HOUR_FORMAT, DATE_FORMAT
+from pedro.brain.constants.constants import DATE_FULL_FORMAT, HOUR_FORMAT, DATE_FORMAT, DAYS_OF_WEEK
 from pedro.data_structures.chat_log import ChatLog
 
 
@@ -132,23 +132,13 @@ async def adjust_pedro_casing(
 
 
 def friendly_chat_log(chat_logs: list[ChatLog]):
-    days_of_week = {
-        0: "Segunda-feira",
-        1: "Terça-feira",
-        2: "Quarta-feira",
-        3: "Quinta-feira",
-        4: "Sexta-feira",
-        5: "Sábado",
-        6: "Domingo"
-    }
-
     friendly_messages = []
     current_date = None
 
     for log in chat_logs:
         dt = datetime.strptime(log.datetime, DATE_FULL_FORMAT)
 
-        day_of_week = days_of_week[dt.weekday()]
+        day_of_week = DAYS_OF_WEEK[dt.weekday()]
         date_str = dt.strftime(DATE_FORMAT)
         time_str = dt.strftime(HOUR_FORMAT)
 

@@ -11,20 +11,20 @@ import logging
 # Project
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
-from pedro.data_structures.user_opinion import UserOpinion
+from pedro.data_structures.user_data import UserData
 from pedro.data_structures.telegram_message import Message, From, Chat
 from pedro.brain.modules.database import Database
 from pedro.utils.text_utils import create_username
 from pedro.data_structures.chat_log import ChatLog
 
 
-class UserOpinions:
+class UserDataManager:
     def __init__(self, database: Database, llm: LLM, telegram: Telegram, chat_history=None, max_opinions: int = 10):
         self.database = database
         self.llm = llm
         self.telegram = telegram
         self.chat_history = chat_history
-        self.table_name = "user_opinions"
+        self.table_name = "user_data"
         self.max_opinions = max_opinions
 
         self.moods_levels = [
@@ -50,15 +50,15 @@ class UserOpinions:
 
         return self.moods_levels[level]
 
-    def get_user_opinion(self, user_id: int) -> Optional[UserOpinion]:
+    def get_user_opinion(self, user_id: int) -> Optional[UserData]:
         results = self.database.search(self.table_name, {"user_id": user_id})
         if results:
-            return UserOpinion(**results[0])
+            return UserData(**results[0])
         return None
 
-    def get_all_user_opinions(self) -> List[UserOpinion]:
+    def get_all_user_opinions(self) -> List[UserData]:
         results = self.database.get_all(self.table_name)
-        return [UserOpinion(**data) for data in results]
+        return [UserData(**data) for data in results]
 
     def get_users(self) -> List[str]:
         """
@@ -80,7 +80,7 @@ class UserOpinions:
 
         return users
 
-    def get_users_by_text_match(self, text: str, threshold: float=0.8) -> List[UserOpinion]:
+    def get_users_by_text_match(self, text: str, threshold: float=0.8) -> List[UserData]:
         all_users = self.get_all_user_opinions()
         matching_users = []
 
@@ -120,7 +120,7 @@ class UserOpinions:
 
         return matching_users
 
-    def adjust_mood_by_user_id(self, user_id: int, mood_adjustment: float) -> Optional[UserOpinion]:
+    def adjust_mood_by_user_id(self, user_id: int, mood_adjustment: float) -> Optional[UserData]:
         user_opinion = self.get_user_opinion(user_id)
         if not user_opinion:
             return None
@@ -140,7 +140,7 @@ class UserOpinions:
 
         return user_opinion
 
-    def add_user_if_not_exists(self, message: Message) -> UserOpinion:
+    def add_user_if_not_exists(self, message: Message) -> UserData:
         user_from = message.from_
 
         existing_user = self.get_user_opinion(user_from.id)
@@ -148,7 +148,7 @@ class UserOpinions:
         if existing_user:
             return existing_user
 
-        user_opinion = UserOpinion(
+        user_opinion = UserData(
             user_id=user_from.id,
             username=user_from.username,
             first_name=user_from.first_name,
@@ -186,7 +186,7 @@ class UserOpinions:
 
         return 3
 
-    async def add_opinion_by_message_tone(self, text: str, message: Message) -> Optional[UserOpinion]:
+    async def add_opinion_by_message_tone(self, text: str, message: Message) -> Optional[UserData]:
         prompt = (f"Dada a mensagem '{text}' enviada por "
                   f"{create_username(first_name=message.from_.first_name, username=message.from_.username)}, "
                   f"resuma de maneira sucinta, em no máximo 8 palavras, a sua opinião ou o que identificou sobre ele."
@@ -200,7 +200,7 @@ class UserOpinions:
 
         return None
 
-    def add_opinion(self, opinion: str, user_id: int = None, username: str = None) -> Optional[UserOpinion]:
+    def add_opinion(self, opinion: str, user_id: int = None, username: str = None) -> Optional[UserData]:
         if user_id is None and username is None:
             return None
 
@@ -343,6 +343,7 @@ class UserOpinions:
 
                 if not all_users:
                     logging.warning("No users found in database for mood decay")
+                    await asyncio.sleep(60)
                     continue
 
                 logging.info(f"Processing mood decay for {len(all_users)} users")

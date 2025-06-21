@@ -6,7 +6,7 @@ from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.prompt_utils import get_photo_description
 from pedro.utils.text_utils import adjust_pedro_casing
@@ -16,7 +16,7 @@ async def fact_check_reaction(
         message: Message,
         history: ChatHistory,
         telegram: Telegram,
-        opinions: UserOpinions,
+        user_data: UserDataManager,
         llm: LLM,
 ):
     if message.text and (
@@ -24,14 +24,14 @@ async def fact_check_reaction(
         message.text.lower().startswith("/fact") or
         message.text.lower().startswith("/check")
     ):
-        await fact_check(message, history, telegram, opinions, llm)
+        await fact_check(message, history, telegram, user_data, llm)
 
 
 async def fact_check(
     message: Message,
     history: ChatHistory,
     telegram: Telegram,
-    opinions: UserOpinions,
+    user_data: UserDataManager,
     llm: LLM,
 ) -> None:
     model = "gpt-4.1-mini"

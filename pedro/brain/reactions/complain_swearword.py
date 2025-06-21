@@ -7,7 +7,7 @@ from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.daily_flags import DailyFlags
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.text_utils import adjust_pedro_casing, get_roletas_from_pavuna
@@ -29,7 +29,7 @@ async def complain_swearword_reaction(
     message: Message,
     history: ChatHistory,
     telegram: Telegram,
-    opinions: UserOpinions,
+    user_data: UserDataManager,
     llm: LLM,
     daily_flags: DailyFlags
 ) -> None:

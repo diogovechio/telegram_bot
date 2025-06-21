@@ -6,7 +6,7 @@ from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.datetime_manager import DatetimeManager
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.daily_flags import DailyFlags
 from pedro.data_structures.telegram_message import Message, ReplyToMessage
 from pedro.utils.text_utils import create_username
@@ -77,7 +77,7 @@ async def process_reply_message(message: Message) -> str:
         return f" ->>  [... {sender_name} havia dito anteriormente: [[{reply_text}]] ]"
 
 
-async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: UserOpinions | None, total_messages=15, telegram: Telegram | None = None) -> str:
+async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: UserDataManager | None, total_messages=15, telegram: Telegram | None = None) -> str:
     datetime = DatetimeManager()
 
     chat_history = memory.get_friendly_last_messages(chat_id=message.chat.id, limit=total_messages)

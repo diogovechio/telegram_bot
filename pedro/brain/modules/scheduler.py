@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import schedule
 
 # Project
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.brain.modules.datetime_manager import DatetimeManager
 from pedro.brain.modules.telegram import Telegram
 
@@ -31,7 +31,7 @@ def call_async_function(func):
 
 
 class Scheduler:
-    def __init__(self, user_opinions: UserOpinions, telegram: Telegram, daily_flags=None):
+    def __init__(self, user_opinions: UserDataManager, telegram: Telegram, daily_flags=None):
         self.user_opinions = user_opinions
         self.datetime_manager = DatetimeManager()
         self.telegram = telegram

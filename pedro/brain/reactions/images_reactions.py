@@ -3,7 +3,7 @@ from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.brain.reactions.fact_check import fact_check
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.prompt_utils import image_trigger, create_basic_prompt
@@ -14,7 +14,7 @@ async def images_reaction(
         message: Message,
         history: ChatHistory,
         telegram: Telegram,
-        opinions: UserOpinions,
+        user_data: UserDataManager,
         llm: LLM,
 ) -> None:
     if message.photo:
@@ -32,12 +32,12 @@ async def images_reaction(
 
                 if "SIM" in response.upper() or "PROV" in response.upper():
                     await fact_check(
-                        message, history, telegram, opinions, llm
+                        message, history, telegram, user_data, llm
                     )
 
         elif image and image_trigger(message):
             with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-                prompt = await create_basic_prompt(message, history, opinions, total_messages=3)
+                prompt = await create_basic_prompt(message, history, user_data, total_messages=3)
 
                 response = await adjust_pedro_casing(
                     await llm.generate_text(prompt, model="gpt-4.1-mini", image=image)

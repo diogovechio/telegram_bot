@@ -8,7 +8,7 @@ from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
-from pedro.brain.modules.user_opinion_manager import UserOpinions
+from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.prompt_utils import get_photo_description
 from pedro.utils.text_utils import adjust_pedro_casing
@@ -60,7 +60,7 @@ async def handle_command_with_parameters(
     message: Message,
     history: ChatHistory,
     telegram: Telegram,
-    opinions: UserOpinions,
+    user_data: UserDataManager,
     llm: LLM,
     topics: bool,
     days: int
@@ -89,7 +89,7 @@ async def handle_command_with_parameters(
     if topics:
         prompt = "em no máximo 7 tópicos de no máximo 6 palavras cada, " + prompt
 
-    for user in opinions.get_users():
+    for user in user_data.get_users():
         if search_text.lower() in user.lower():
             prompt = f'resuma o que {user} tem falado na conversa abaixo'
             break
@@ -202,7 +202,7 @@ async def summary_reaction(
     message: Message,
     history: ChatHistory,
     telegram: Telegram,
-    opinions: UserOpinions,
+    user_data: UserDataManager,
     llm: LLM,
 ) -> None:
     is_tldr = await tldr_trigger(message)
@@ -218,7 +218,7 @@ async def summary_reaction(
         if message.reply_to_message:
             summary = await handle_reply_to_message(message, history, telegram, llm, topics)
         elif " " in message.text or any(letter.isdigit() for letter in message.text):
-            summary = await handle_command_with_parameters(message, history, telegram, opinions, llm, topics, days)
+            summary = await handle_command_with_parameters(message, history, telegram, user_data, llm, topics, days)
         else:
             summary = await handle_basic_summarization(message, history, telegram, llm, topics, days)
 
