@@ -27,7 +27,7 @@ async def misc_commands_reaction(
 ) -> None:
     if message.text:
         if message.text.startswith("/me"):
-            await handle_me_command(message, telegram, opinions)
+            await handle_me_command(message, telegram, opinions, llm)
         elif message.text.startswith('/del') and message.reply_to_message:
             await handle_del_command(message, telegram, llm)
         elif message.text.startswith('/data'):
@@ -40,20 +40,36 @@ async def handle_me_command(
     message: Message,
     telegram: Telegram,
     opinions: UserOpinions,
+    llm: LLM = None,
 ) -> None:
     """Handle the /me command, showing user ID, chat ID, and mood score."""
     user_mood = 0
+    user_opinions = []
 
     username = create_username(message.from_.first_name, message.from_.username)
     for user_opinion in opinions.get_all_user_opinions():
         user_name = create_username(user_opinion.first_name, user_opinion.username)
         if username == user_name:
             user_mood = round(user_opinion.my_mood_with_him, 2)
+            user_opinions = user_opinion.opinions
+
+    opinion_message = "Nada."
+    if user_opinions and llm:
+        opinions_text = "\n- ".join(user_opinions)
+        prompt = (f"Com base nas seguintes informações sobre {username}:\n- {opinions_text}\n\n"
+                  f"Diga a ele, em uma frase curta (máximo 8 palavras), o que você pensa ou sabe sobre ele.")
+
+        opinion_message = (await llm.generate_text(
+            prompt=prompt,
+            temperature=1.0,
+            model="gpt-3.5-turbo-instruct"
+        )).replace("\n", "")
 
     await telegram.send_message(
         message_text=f"*ID:* `{message.from_.id}`\n"
                      f"*Chat ID:* `{message.chat.id}`\n"
-                     f"*Meu ódio por você:* `{user_mood}`",
+                     f"*Meu ódio por você:* `{user_mood}`\n"
+                     f"*O que penso e sei sobre você:* `{opinion_message}`",
         chat_id=message.chat.id,
         reply_to=message.message_id,
         parse_mode="Markdown"
