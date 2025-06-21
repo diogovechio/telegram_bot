@@ -216,6 +216,7 @@ class Telegram:
             sleep_time=0,
             parse_mode: str = "Markdown",
             disable_notification=False,
+            disable_web_page_preview=False,
             max_retries=7
     ) -> None:
         fallback_parse_modes = ["", "HTML", "MarkdownV2", "Markdown"]
@@ -232,6 +233,7 @@ class Telegram:
                             'allow_sending_without_reply': True,
                             'text': message_text,
                             'disable_notification': disable_notification,
+                            'disable_web_page_preview': disable_web_page_preview,
                             'parse_mode': parse_mode
                         }
                 ) as resp:

@@ -45,6 +45,7 @@ class ReplyToMessage:
     chat: T.Optional[Chat] = None
     date: T.Optional[int] = None
     text: T.Optional[str] = None
+    caption: T.Optional[str] = None
     photo: T.Optional[T.List[Photo]] = None
 
 

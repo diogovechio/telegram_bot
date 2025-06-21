@@ -44,7 +44,7 @@ class ChatHistory:
 
         self.session = aiohttp.ClientSession()
 
-    async def process_image(self, message: Message) -> str:
+    async def _process_image(self, message: Message) -> str:
         if not self.telegram or not self.llm:
             logger.warning("Telegram or LLM not provided, cannot process image")
             return message.text or message.caption or ""
@@ -59,6 +59,9 @@ class ChatHistory:
                 return message.text or message.caption or ""
 
             prompt = "Descreva a imagem com o máximo de detalhes identificáveis"
+
+            if message.caption:
+                prompt = f"Descreva a imagem e responda: '{message.caption}'"
             description = await self.llm.generate_text(prompt=prompt, image=image)
 
             formatted_text = f"[[IMAGEM ANEXADA: {description} ]]"
@@ -71,37 +74,6 @@ class ChatHistory:
             logger.exception(f"Error processing image: {e}")
             return message.text or message.caption or ""
 
-    async def process_photo(self, reply: ReplyToMessage | Message) -> str:
-        if not self.telegram or not self.llm:
-            logger.warning("Telegram or LLM not provided, cannot process reply photo")
-            return ""
-
-        if not reply.photo:
-            return ""
-
-        try:
-            # Create a temporary Message object to use with image_downloader
-            temp_message = Message(
-                from_=reply.from_,
-                message_id=reply.message_id,
-                chat=reply.chat,
-                date=reply.date,
-                text=reply.text,
-                photo=reply.photo
-            )
-
-            image = await self.telegram.image_downloader(temp_message)
-            if not image:
-                logger.warning("Failed to download reply photo")
-                return ""
-
-            prompt = "Descreva a imagem com o máximo de detalhes identificáveis"
-            description = await self.llm.generate_text(prompt=prompt, image=image)
-
-            return f"[[IMAGEM ANEXADA: {description} ]]"
-        except Exception as e:
-            logger.exception(f"Error processing reply photo: {e}")
-            return ""
 
     async def add_message(self, message: Message | ReplyToMessage | str, chat_id: int, is_pedro: bool = False):
         # Format the date as a string (DD-MM-YYYY)
@@ -131,7 +103,7 @@ class ChatHistory:
 
             # Check if message has a photo and process it
             if message.photo and self.telegram and self.llm:
-                message_text = await self.process_image(message)
+                message_text = await self._process_image(message)
             else:
                 message_text = message.text or message.caption or ""
 

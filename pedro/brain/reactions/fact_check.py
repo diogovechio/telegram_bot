@@ -8,6 +8,7 @@ from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
 from pedro.data_structures.telegram_message import Message
+from pedro.utils.prompt_utils import get_photo_description
 from pedro.utils.text_utils import adjust_pedro_casing
 
 
@@ -51,11 +52,11 @@ async def fact_check(
                 mentiroso = message.reply_to_message.from_.first_name
                 reply_to = message.reply_to_message.message_id
             elif message.reply_to_message and message.reply_to_message.photo:
-                mentiroso_argument = await history.process_photo(message.reply_to_message)
+                mentiroso_argument = await get_photo_description(telegram, llm, message.reply_to_message)
                 mentiroso = message.reply_to_message.from_.first_name
                 reply_to = message.reply_to_message.message_id
             elif message.photo:
-                mentiroso_argument = await history.process_photo(message)
+                mentiroso_argument = await get_photo_description(telegram, llm, message)
                 mentiroso = message.from_.first_name
                 reply_to = message.message_id
             else:

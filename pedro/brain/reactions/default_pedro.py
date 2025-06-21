@@ -8,7 +8,7 @@ from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
 from pedro.data_structures.daily_flags import DailyFlags
 from pedro.data_structures.telegram_message import Message
-from pedro.utils.prompt_utils import create_basic_prompt, text_trigger
+from pedro.utils.prompt_utils import create_basic_prompt, text_trigger, check_web_search
 from pedro.utils.text_utils import adjust_pedro_casing
 
 
@@ -24,7 +24,7 @@ async def default(
         await opinions.adjust_mood(message)
 
         with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-            web_search = any(word in message.text.lower() for word in ["tempo", "previs", "clima", "cotação", "fonte", "pesquis", "google", "internet", "verifique", "busque", "notícia", "noticia"])
+            web_search = check_web_search(message)
             model = "gpt-4.1-mini" if web_search else "gpt-4.1-nano"
 
             prompt = await create_basic_prompt(
@@ -44,4 +44,5 @@ async def default(
                 message_text=response,
                 chat_id=message.chat.id,
                 reply_to=message.message_id,
+                disable_web_page_preview=web_search
             )

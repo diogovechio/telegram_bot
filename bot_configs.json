@@ -1,19 +1,55 @@
 {
+  "face_classifier": {
+    "face_tolerance": 0.6,
+    "face_min_accepted_matches": 0.8,
+    "box_min_size": 64
+  },
+  "random_params": {
+    "random_mock_frequency": 0.02,
+    "words_react_frequency": 0.3,
+    "mock_drunk_decaptor_frequency": 0.03,
+    "annoy_user_frequency": 0.00
+  },
+  "openai": {
+    "force_model": null,
+    "max_tokens": 500,
+    "ada_only_users": [],
+    "davinci_daily_limit": 70,
+    "curie_daily_limit": 80,
+    "dall_e_daily_limit": 3
+  },
+  "rss_feed": {
+    "news": "",
+    "games": ""
+  },
+  "mood_params": {
+    "regular": 0.5,
+    "reply": 1,
+    "mentioned": 1.5,
+    "swearword": 0.3
+  },
+  "ask_photos": false,
+  "telegram_api_semaphore": 5,
+  "not_internal_chats": [-4254107692, -942505785],
+  "limited_prompt_users": [],
+  "mock_chats": [-942505785],
+  "ignore_users": [],
+  "annoy_users": ["nands93"],
+  "block_samuel": false,
   "allowed_ids": [
 {"name": "kkeyo",
 "id": 29311071},
     {
       "name": "Pedro Debug",
       "id": -704277411
-    },
+    },{"name": "fer", "id": 170957857},
     {
       "name": "blamerdandré",
       "id": -942505785
     },
-    {"name": "Pedro debug 3", "id": -4098496372},
     {
       "name": "Pedro Debug 2",
-      "id": -884201527
+      "id": -4098496372
     },
     {
       "name": "Diogo",
@@ -29,7 +65,7 @@
     },
     {
       "name": "ASD EUROPEU",
-      "id": -423330801
+      "id": -1002061884556
     },
     {
       "name": "BLA principal",
@@ -38,6 +74,100 @@
     {
       "name": "ASD Esgoto",
       "id": -31252096
+    },
+    {
+        "name": "inovaidevs",
+        "id": -1002474742734
     }
-  ]
+  ],
+  "mock_messages": {
+    "Eicho": {
+      "messages": [
+        "manda nudes",
+        "estou esperando meus nudes"
+      ]
+    },
+    "thommazk": {
+      "messages": [
+        "que tesão",
+        "eu vi um pênis",
+        "imagina o pinto desse moço",
+        "ela gemendo deve ser um tesão que só",
+        "tem gente que compra carro, pq eu não posso comprar minha cadeira?"
+      ]
+    },
+    "thai5a": {
+      "messages": [
+        "grossa",
+        "GROSSA",
+	"miga"
+      ]
+    },
+    "771960127": {
+      "name": "yux",
+      "messages": [
+        "Sério, galera",
+        "Cara..."
+      ]
+    },
+    "8375482": {
+      "rss_feed": "",
+      "name": "diogo",
+      "messages": [
+        "o importante é n trabalhar"
+      ]
+    },
+    "1004626280": {
+      "name": "samuel",
+      "messages": [
+        "bostil",
+        "dogecoin vale mais do que real"
+      ]
+    },
+    "nands93": {
+      "rss_feed": "",
+      "messages": [
+       "Xiiii",
+       "cu trancou",
+       "platinei agora",
+       "mano",
+       "BOSTIL"
+      ]
+    },
+    "cocao": {
+      "rss_feed": "",
+      "messages": [
+        "eu podia ta soldando",
+        "eu adoro um falo",
+        "a gente nao tem casa",
+        "glamour zero",
+        "só esperando o cartao virar"
+      ]
+    },
+    "kkeyo": {
+      "rss_feed": "",
+      "messages": [
+        "PC é casa da mãe Joana",
+        "só tem gentalha",
+        "vou fazer hambúrguer pq tenho que economizar"
+      ]
+    },
+    "decaptor": {
+      "rss_feed": "",
+      "messages": [
+	"quebra mais",
+        "culpa dos webdevs",
+        "abstraçao em cima de abstração em cima de abstração em cima hardware",
+        "fala com o hardware",
+        "faz em c",
+        "o que tem no mercado é um monte de nego chato reclamando da vida programando em oop criando abstração pro cu",
+        "mimimi",
+        "tenho 99% de certeza que a ia tá errada",
+        "minha indiferença é maior que meu desgosto",
+        "eu pelo menos sou imparcial o suficiente pra enxergar essas coisas",
+        "eu uso win 7 sem antivirus mais de uma década",
+        "eu to ficando com raiva com todo mundo que manda merda pros meus comentários"
+      ]
+    }
+  }
 }

@@ -4,10 +4,11 @@ import asyncio
 from pedro.brain.constants.constants import POLITICAL_OPINIONS, POLITICAL_WORDS
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.datetime_manager import DatetimeManager
+from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
 from pedro.data_structures.daily_flags import DailyFlags
-from pedro.data_structures.telegram_message import Message
+from pedro.data_structures.telegram_message import Message, ReplyToMessage
 from pedro.utils.text_utils import create_username
 import logging
 
@@ -60,7 +61,7 @@ async def send_telegram_log(
         )
 
 
-async def process_reply_message(message: Message, memory: ChatHistory) -> str:
+async def process_reply_message(message: Message) -> str:
     if not message.reply_to_message:
         return ""
 
@@ -69,7 +70,7 @@ async def process_reply_message(message: Message, memory: ChatHistory) -> str:
     sender_name = f"{reply.from_.first_name} - {sender_name}"
 
     if reply.photo:
-        image_description = await memory.process_photo(reply)
+        image_description = await get_photo_description(reply, extra_prompt=message.text)
         return f" ->> [... {sender_name} havia enviado a imagem: {image_description} ]"
     else:
         reply_text = reply.text or ""
@@ -93,7 +94,7 @@ async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: U
 
     reply_text = ""
     if message.reply_to_message:
-        reply_text = await process_reply_message(message, memory)
+        reply_text = await process_reply_message(message)
 
     if not opinions:
         base_prompt = (f"Você é o Pedro, responda a mensagem '{text}' enviada "
@@ -149,3 +150,48 @@ def image_trigger(message: Message) -> bool:
             (message.caption.lower().startswith("pedro") or message.caption.lower().replace("?", "").strip().endswith(
                 "pedro"))
     )
+
+
+async def get_photo_description(
+        telegram: Telegram,
+        llm: LLM,
+        message: ReplyToMessage | Message,
+        extra_prompt: None | str = None,
+) -> str:
+    if not telegram or not llm:
+        logger.warning("Telegram or LLM not provided, cannot process reply photo")
+        return ""
+
+    if not message.photo:
+        return ""
+
+    try:
+        temp_message = Message(
+            from_=message.from_,
+            message_id=message.message_id,
+            chat=message.chat,
+            date=message.date,
+            text=message.text,
+            photo=message.photo,
+            caption=message.caption
+        )
+
+        image = await telegram.image_downloader(temp_message)
+        if not image:
+            logger.warning("Failed to download reply photo")
+            return ""
+
+        prompt = "Descreva a imagem com o máximo de detalhes identificáveis"
+        if extra_prompt:
+            prompt = "Sobre a imagem: " + extra_prompt
+        caption = f'Legenda: {temp_message.caption}: ' if temp_message.caption else ""
+        description = await llm.generate_text(prompt=prompt, image=image)
+
+        return f"[[{caption}IMAGEM ANEXADA: {description} ]]"
+    except Exception as e:
+        logger.exception(f"Error processing reply photo: {e}")
+        return ""
+
+
+def check_web_search(message: Message) -> bool:
+    return any(word in message.text.lower() for word in ["tempo", "previs", "clima", "cotação", "fonte", "pesquis", "google", "internet", "verifique", "busque", "notícia", "noticia"])

@@ -32,7 +32,7 @@ async def _critic_or_praise(message, telegram, llm, history) -> None:
         if message.reply_to_message and message.reply_to_message.text:
             text = message.reply_to_message.text
         elif message.reply_to_message and message.reply_to_message.photo:
-            text = await history.process_photo(message.reply_to_message)
+            text = await history.get_photo_description(message.reply_to_message)
 
         user_name = message.reply_to_message.from_.first_name
 

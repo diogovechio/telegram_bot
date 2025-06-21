@@ -10,6 +10,7 @@ from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_opinion_manager import UserOpinions
 from pedro.data_structures.telegram_message import Message
+from pedro.utils.prompt_utils import get_photo_description
 from pedro.utils.text_utils import adjust_pedro_casing
 
 
@@ -33,7 +34,7 @@ async def handle_reply_to_message(
         prompt = "em no máximo 7 tópicos de no máximo 6 palavras cada, " + prompt
 
     if message.reply_to_message.photo:
-        image_description = await history.process_photo(message.reply_to_message)
+        image_description = await get_photo_description(message.reply_to_message, extra_prompt=message.text)
         input_text = f"[[IMAGE]]: {image_description}"
     else:
         input_text = message.reply_to_message.text or ""
