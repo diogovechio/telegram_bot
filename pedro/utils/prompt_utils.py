@@ -61,7 +61,7 @@ async def send_telegram_log(
         )
 
 
-async def process_reply_message(message: Message) -> str:
+async def process_reply_message(llm: LLM, telegram: Telegram, message: Message) -> str:
     if not message.reply_to_message:
         return ""
 
@@ -70,14 +70,21 @@ async def process_reply_message(message: Message) -> str:
     sender_name = f"{reply.from_.first_name} - {sender_name}"
 
     if reply.photo:
-        image_description = await get_photo_description(reply, extra_prompt=message.text)
+        image_description = await get_photo_description(llm=llm, telegram=telegram, message=reply, extra_prompt=message.text)
         return f" ->> [... {sender_name} havia enviado a imagem: {image_description} ]"
     else:
         reply_text = reply.text or ""
         return f" ->>  [... {sender_name} havia dito anteriormente: [[{reply_text}]] ]"
 
 
-async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: UserDataManager | None, total_messages=15, telegram: Telegram | None = None) -> str:
+async def create_basic_prompt(
+        message: Message,
+        memory: ChatHistory,
+        user_data: UserDataManager | None,
+        total_messages=15,
+        telegram: Telegram | None = None,
+        llm: LLM | None = None,
+) -> str:
     datetime = DatetimeManager()
 
     chat_history = memory.get_friendly_last_messages(chat_id=message.chat.id, limit=total_messages)
@@ -87,30 +94,30 @@ async def create_basic_prompt(message: Message, memory: ChatHistory, opinions: U
         political_opinions = "\n".join(POLITICAL_OPINIONS)
         political_opinions = f"{political_opinions}\n\n"
 
-    if opinions:
-        users_opinions = opinions.get_users_by_text_match(chat_history)
+    if user_data:
+        users_opinions = user_data.get_users_by_text_match(chat_history)
 
     text = message.caption if message.caption else message.text
 
     reply_text = ""
     if message.reply_to_message:
-        reply_text = await process_reply_message(message)
+        reply_text = await process_reply_message(message=message, telegram=telegram, llm=llm)
 
-    if not opinions:
+    if not user_data:
         base_prompt = (f"Você é o Pedro, responda a mensagem '{text}' enviada "
                        f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
-    elif opinions and text:
-        base_prompt = (f"{opinions.get_mood_level_prompt(message.from_.id)}\n\nVocê é o Pedro, "
+    elif user_data and text:
+        base_prompt = (f"{user_data.get_mood_level_prompt(message.from_.id)}\n\nVocê é o Pedro, "
                        f"responda a mensagem '{text}' enviada "
                        f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
     else:
-        base_prompt = (f"{opinions.get_mood_level_prompt(message.from_.id)}\n\nVocê é o Pedro,"
+        base_prompt = (f"{user_data.get_mood_level_prompt(message.from_.id)}\n\nVocê é o Pedro,"
                        f" responda sobre imagem '{text}'enviada "
                        f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
 
     opinions_text = ""
 
-    if opinions:
+    if user_data:
         for user_opinion in users_opinions:
             if user_opinion.opinions:
                 user_display_name = create_username(user_opinion.first_name, user_opinion.username)

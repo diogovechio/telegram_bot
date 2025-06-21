@@ -3,11 +3,11 @@ DATE_FORMAT = "%d-%m-%Y"
 HOUR_FORMAT = "%H:%M"
 
 DAYS_OF_WEEK = [
-    "Segunda-feira",
-    "Terça-feira",
-    "Quarta-feira",
-    "Quinta-feira",
-    "Sexta-feira",
+    "Segunda",
+    "Terça",
+    "Quarta",
+    "Quinta",
+    "Sexta",
     "Sábado",
     "Domingo"
 ]
