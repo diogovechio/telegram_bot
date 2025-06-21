@@ -31,7 +31,8 @@ async def default(
                 message, history,
                 user_data=None if web_search else user_data,
                 total_messages=3 if web_search else 10,
-                telegram=telegram
+                telegram=telegram,
+                llm=llm
             )
 
             response = await adjust_pedro_casing(

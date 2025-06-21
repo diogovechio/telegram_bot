@@ -37,7 +37,8 @@ async def images_reaction(
 
         elif image and image_trigger(message):
             with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-                prompt = await create_basic_prompt(message=message, memory=history, user_data=user_data, total_messages=3, telegram=telegram, llm=llm)
+                prompt = await create_basic_prompt(
+                message=message, memory=history, user_data=user_data, total_messages=3, telegram=telegram, llm=llm)
 
                 response = await adjust_pedro_casing(
                     await llm.generate_text(prompt, model="gpt-4.1-mini", image=image)
