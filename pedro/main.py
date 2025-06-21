@@ -111,7 +111,7 @@ class TelegramBot:
     async def _message_handler(self) -> None:
         while True:
             try:
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.01)
 
                 async for message in self.telegram.get_new_message():
                     message = message.message
