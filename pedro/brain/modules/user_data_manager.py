@@ -186,6 +186,23 @@ class UserDataManager:
 
         return 3
 
+    async def _add_opinion(self, prompt: str, message: Message) -> Optional[UserData]:
+        opinion = await self.llm.generate_text(prompt)
+
+        if not any(word.lower() in opinion.lower() for word in ["não tenho", "none", "desculpe,", "por favor,", "entendido,"]):
+            return self.add_opinion(opinion=opinion, user_id=message.from_.id)
+
+        return None
+
+    async def _add_opinion_by_historical_messages(self, text: str, message: Message) -> Optional[UserData]:
+        prompt = (f"Considerando as mensagens:\n\n{text}\n\nEnviadas por "
+                  f"{create_username(first_name=message.from_.first_name, username=message.from_.username)} "
+                  f"em diversas conversas e em diferentes momentos, resuma de maneira sucinta, em no máximo 8 palavras, "
+                  f"o que identificou sobre ele. Caso seja incapaz de gerar alguma observação com base na"
+                  f" mensagem fornecida, não peça mais informações, apenas retorne '###NONE###'.")
+
+        return await self._add_opinion(prompt, message)
+
     async def add_opinion_by_message_tone(self, text: str, message: Message) -> Optional[UserData]:
         prompt = (f"Dada a mensagem '{text}' enviada por "
                   f"{create_username(first_name=message.from_.first_name, username=message.from_.username)}, "
@@ -193,12 +210,7 @@ class UserDataManager:
                   f" Caso seja incapaz de gerar alguma opinião ou observação com base na"
                   f" mensagem fornecida, não peça mais informações, apenas retorne '###NONE###'.")
 
-        opinion = await self.llm.generate_text(prompt)
-
-        if not any(word.lower() in opinion.lower() for word in ["não tenho", "none", "desculpe,", "por favor,", "entendido,"]):
-            return self.add_opinion(opinion=opinion, user_id=message.from_.id)
-
-        return None
+        return await self._add_opinion(prompt, message)
 
     def add_opinion(self, opinion: str, user_id: int = None, username: str = None) -> Optional[UserData]:
         if user_id is None and username is None:
@@ -316,13 +328,13 @@ class UserDataManager:
 
                         # Concatenate all messages
                         for chat_log in selected_messages:
-                            concatenated_messages += chat_log.message + "\n"
+                            concatenated_messages += f"- {chat_log.message}\n"
 
                         # Set the concatenated text to the message
                         message.text = concatenated_messages.strip()
 
                         # Generate a single opinion based on all messages
-                        await self.add_opinion_by_message_tone(concatenated_messages, message)
+                        await self._add_opinion_by_historical_messages(concatenated_messages, message)
                     except Exception as e:
                         logging.error(f"Error processing messages for user {user_id}: {e}")
             else:
