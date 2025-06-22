@@ -151,7 +151,8 @@ async def create_self_complement_prompt(
 
     if random.random() < 0.7:
         base_prompt = (
-            "Você é o Pedro. Complemente a mensagem que acabou de enviar. Seja sucinto. Não faça novos cumprimentos. "
+            "Você é o Pedro. Complemente a mensagem que acabou de enviar. Seja sucinto, em no máximo 7 palavras. "
+            "Não faça novos cumprimentos. "
             "Não repita o que já foi dito, apenas complemente.\n\n"
         )
     else:
