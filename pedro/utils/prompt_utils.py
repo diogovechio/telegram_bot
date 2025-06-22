@@ -151,7 +151,8 @@ async def create_self_complement_prompt(
 
     if random.random() < 0.7:
         base_prompt = (
-            "Você é o Pedro. Complemente a mensagem que acabou de enviar. Seja sucinto. Não faça novos cumprimentos. "
+            "Você é o Pedro. Complemente a mensagem que acabou de enviar. Seja sucinto, em no máximo 7 palavras. "
+            "Não faça novos cumprimentos. "
             "Não repita o que já foi dito, apenas complemente.\n\n"
         )
     else:
@@ -228,7 +229,7 @@ async def get_photo_description(
         if extra_prompt:
             prompt = "Sobre a imagem: " + extra_prompt
         caption = f'Legenda: {temp_message.caption}: ' if temp_message.caption else ""
-        description = await llm.generate_text(prompt=prompt, image=image)
+        description = await llm.generate_text(prompt=prompt, image=image, model="gpt-4.1-mini")
 
         return f"[[{caption}IMAGEM ANEXADA: {description} ]]"
     except Exception as e:

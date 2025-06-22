@@ -25,30 +25,47 @@ logging.basicConfig(level=logging.INFO)
 
 
 class TelegramBot:
+    """
+    Main Telegram bot class that handles configuration, initialization and message processing.
+    
+    This class sets up the bot with the provided configuration, manages connections to various
+    services like LLM, database, and handles incoming Telegram messages.
+
+    Attributes:
+        bot_config_file (str): Path to the bot configuration file
+        secrets_file (str): Path to the secrets configuration file  
+        debug_mode (bool): Whether to run the bot in debug mode
+    """
+
     def __init__(
             self,
             bot_config_file: str,
             secrets_file: str,
             debug_mode=False
     ):
+        """
+        Initialize the TelegramBot with configuration files and debug settings.
+
+        Args:
+            bot_config_file (str): Path to the bot configuration file
+            secrets_file (str): Path to the secrets file containing sensitive data
+            debug_mode (bool, optional): Enable debug mode. Defaults to False.
+        """
         self.version = __version__
         self.allowed_list = []
         self.debug_mode = debug_mode
 
-        self.config: T.Optional[BotConfig] = None
+        self.config: BotConfig | None = None
         self.config_file = bot_config_file
         self.secrets_file = secrets_file
 
-        self.datetime_now = datetime.now()
-
-        self.llm: T.Optional[LLM] = None
-        self.telegram: T.Optional[Telegram] = None
-
-        self.database: T.Optional[Database] = None
-        self.user_data: T.Optional[UserDataManager] = None
-        self.chat_history: T.Optional[ChatHistory] = None
-        self.scheduler = None
+        self.llm: LLM | None = None
+        self.telegram: Telegram | None = None
+        self.database: Database | None = None
+        self.user_data: UserDataManager | None = None
+        self.chat_history: ChatHistory | None = None
         self.agenda: AgendaManager | None = None
+        self.scheduler: Scheduler | None = None
 
         self.lock = True
 
@@ -61,6 +78,12 @@ class TelegramBot:
         self.loop: T.Optional[AbstractEventLoop] = None
 
     async def run(self) -> None:
+        """
+        Start the bot and begin processing messages.
+        
+        This method initializes configuration parameters and starts the main bot tasks.
+        Will attempt to reconnect after 60 seconds if an error occurs.
+        """
         try:
             self.loop = asyncio.get_running_loop()
 
@@ -79,6 +102,12 @@ class TelegramBot:
             await self.run()
 
     async def load_config_params(self) -> None:
+        """
+        Load and initialize all configuration parameters and services.
+        
+        This includes loading bot and secret configurations, initializing database connection,
+        telegram client, LLM, chat history manager and scheduler.
+        """
         logging.info(f'Pedro Bot v{__version__} - Loading params')
 
         with open(self.config_file, encoding='utf8') as config_file:
@@ -96,13 +125,15 @@ class TelegramBot:
                 self.llm = LLM(self.config.secrets.openai_key)
                 self.database = Database("database/pedro_database.json")
                 self.chat_history = ChatHistory(telegram=self.telegram, llm=self.llm)
-                self.user_data = UserDataManager(self.database, self.llm, telegram=self.telegram, chat_history=self.chat_history)
+                self.user_data = UserDataManager(
+                    database=self.database,
+                    llm=self.llm,
+                    telegram=self.telegram,
+                    chat_history=self.chat_history,
+                )
 
-                # Process historical messages for all users
                 self.loop.create_task(self.user_data.get_opinion_by_historical_messages())
 
-                # Initialize and start the scheduler to run process_historical_messages every day at 9 AM,
-                # database backup every day at 21:00, and reset daily flags at 5 AM
                 self.scheduler = Scheduler(self.user_data, self.telegram, self.daily_flags)
                 self.scheduler.start()
 
@@ -111,6 +142,12 @@ class TelegramBot:
         logging.info('Loading finished')
 
     async def _message_handler(self) -> None:
+        """
+        Main message processing loop that handles incoming Telegram messages.
+        
+        Continuously monitors for new messages, adds them to chat history and 
+        processes them through the message handler if the bot is unlocked.
+        """
         while True:
             try:
                 await asyncio.sleep(0.01)
@@ -142,6 +179,11 @@ class TelegramBot:
                 await asyncio.sleep(15)
 
     async def _unlocker(self) -> None:
+        """
+        Unlocks the bot after a short delay to avoid reacting with messages sent before the initialization.
+        
+        Waits 3 seconds before unlocking the bot to accept and process messages.
+        """
         await asyncio.sleep(3)
 
         self.lock = False

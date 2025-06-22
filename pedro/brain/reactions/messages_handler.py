@@ -37,6 +37,23 @@ async def messages_handler(
         daily_flags: DailyFlags,
         config: BotConfig,
 ) -> None:
+    """
+    Handle incoming messages and trigger appropriate reactions.
+
+    Args:
+        message (Message): The incoming Telegram message
+        history (ChatHistory): Chat history manager instance
+        telegram (Telegram): Telegram bot API manager instance
+        user_data (UserDataManager): User data management instance
+        agenda (AgendaManager): Agenda management instance
+        llm (LLM): Language model instance
+        allowed_list (list): List of allowed chat IDs
+        daily_flags (DailyFlags): Daily feature flags manager
+        config (BotConfig): Bot configuration instance
+
+    Returns:
+        None
+    """
     if message.chat.id in allowed_list:
         updated_message = await check_and_update_with_url_contents(message)
 

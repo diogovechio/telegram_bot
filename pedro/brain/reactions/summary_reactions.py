@@ -34,7 +34,12 @@ async def handle_reply_to_message(
         prompt = "em no máximo 7 tópicos de no máximo 6 palavras cada, " + prompt
 
     if message.reply_to_message.photo:
-        image_description = await get_photo_description(message.reply_to_message, extra_prompt=message.text)
+        image_description = await get_photo_description(
+            telegram=telegram,
+            llm=llm,
+            message=message.reply_to_message,
+            extra_prompt=message.text,
+        )
         input_text = f"[[IMAGE]]: {image_description}"
     else:
         input_text = message.reply_to_message.text or ""

@@ -1,36 +1,51 @@
 # Internal
 import logging
-from collections import defaultdict
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 import os
-from typing import List, Dict, Any, Optional
+from typing import List
 
-import aiohttp
 # External
-from tinydb import Query
+import aiohttp
 
-from pedro.brain.constants.constants import DATE_FULL_FORMAT, HOUR_FORMAT, DATE_FORMAT
-from pedro.brain.modules.datetime_manager import DatetimeManager
 # Project
-from pedro.data_structures.max_size_list import MaxSizeList
+from pedro.brain.constants.constants import DATE_FULL_FORMAT, DATE_FORMAT
+from pedro.brain.modules.datetime_manager import DatetimeManager
 from pedro.utils.text_utils import create_username, list_crop, friendly_chat_log
 from pedro.data_structures.telegram_message import Message, ReplyToMessage
 from pedro.data_structures.chat_log import ChatLog
 from pedro.brain.modules.database import Database
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.llm import LLM
-from pedro.data_structures.images import MessageImage
-from pedro.utils.url_utils import https_url_extract, extract_website_paragraph_content
 
 logger = logging.getLogger(__name__)
 
 
 class ChatHistory:
+    """
+    A class to manage chat history for Telegram conversations.
+
+    This class handles storing, retrieving and processing chat messages, including 
+    text messages and images. Messages are stored in JSON files organized by chat ID
+    and date.
+
+    Attributes:
+        chat_logs_dir (str): Directory path where chat logs are stored
+        table_name (str): Name of the database table for chat logs
+        datetime (DatetimeManager): Instance of DatetimeManager for date/time operations
+        telegram (Telegram): Optional Telegram bot instance for image processing
+        llm (LLM): Optional LLM instance for image description generation
+        session (aiohttp.ClientSession): HTTP client session
+
+    Args:
+        telegram (Telegram, optional): Telegram bot instance. Defaults to None.
+        llm (LLM, optional): LLM instance for AI capabilities. Defaults to None.
+    """
+
     def __init__(
-        self,
-        telegram: Telegram = None,
-        llm: LLM = None,
+            self,
+            telegram: Telegram = None,
+            llm: LLM = None,
     ):
         self.chat_logs_dir = "database/chat_logs"
 
@@ -45,6 +60,19 @@ class ChatHistory:
         self.session = aiohttp.ClientSession()
 
     async def _process_image(self, message: Message) -> str:
+        """
+        Process an image message and generate a description using LLM.
+        
+        Args:
+            message (Message): The Telegram message containing an image.
+            
+        Returns:
+            str: A formatted string containing the image description and caption if present.
+                Returns empty string or caption if image processing fails.
+                
+        Note:
+            Requires telegram and llm attributes to be set.
+        """
         if not self.telegram or not self.llm:
             logger.warning("Telegram or LLM not provided, cannot process image")
             return message.text or message.caption or ""
@@ -62,7 +90,7 @@ class ChatHistory:
 
             if message.caption:
                 prompt = f"Descreva a imagem e responda: '{message.caption}'"
-            description = await self.llm.generate_text(prompt=prompt, image=image)
+            description = await self.llm.generate_text(prompt=prompt, model="gpt-4.1-mini", image=image)
 
             formatted_text = f"[[IMAGEM ANEXADA: {description} ]]"
 
@@ -74,8 +102,26 @@ class ChatHistory:
             logger.exception(f"Error processing image: {e}")
             return message.text or message.caption or ""
 
-
     async def add_message(self, message: Message | ReplyToMessage | str, chat_id: int, is_pedro: bool = False):
+        """
+        Adds a message to the chat history database.
+        
+        This method processes different types of messages (Message, ReplyToMessage, or str) and stores them in a
+        JSON database organized by chat ID and date. It handles user information extraction, image processing if 
+        applicable, and database operations.
+
+        Args:
+            message (Message | ReplyToMessage | str): The message to store. Can be a Telegram Message object,
+                ReplyToMessage object, or a string if the message is from Pedro bot.
+            chat_id (int): The ID of the chat where the message was sent.
+            is_pedro (bool, optional): Flag indicating if the message is from Pedro bot. Defaults to False.
+
+        Note:
+            - Creates chat ID directories and date-based JSON files if they don't exist
+            - Processes images if message contains photos and telegram/llm instances are available
+            - Stores messages with user information, timestamp and content
+            - Handles database operations including insert/update of chat logs
+        """
         # Format the date as a string (DD-MM-YYYY)
         date_str = self.datetime.get_current_date_str()
 
@@ -119,7 +165,8 @@ class ChatHistory:
         elif isinstance(message, ReplyToMessage):
             # Extract user information from ReplyToMessage
             user_id = message.from_.id if message.from_ else 0
-            username = message.from_.username or create_username(message.from_.first_name, message.from_.last_name) if message.from_ else ""
+            username = message.from_.username or create_username(message.from_.first_name,
+                                                                 message.from_.last_name) if message.from_ else ""
             first_name = message.from_.first_name or "" if message.from_ else ""
             last_name = message.from_.last_name or "" if message.from_ else ""
             message_text = message.text or ""
@@ -181,7 +228,6 @@ class ChatHistory:
 
             # Close the database connection
             db.close()
-
     def get_messages(self, chat_id: int, days_limit: int=0, max_messages: int=0) -> dict[str, list[ChatLog]]:
         # Get the current date
         current_date = self.datetime.now()

@@ -1,6 +1,7 @@
 # Internal
 import logging
 import asyncio
+from dataclasses import asdict
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
@@ -78,20 +79,7 @@ class AgendaManager:
             last_celebration=None
         )
 
-        # Convert datetime objects to strings for database storage
-        agenda_dict = {
-            "id": agenda_item.id,
-            "frequency": agenda_item.frequency,
-            "created_by": agenda_item.created_by,
-            "created_at": agenda_item.created_at.isoformat(),
-            "celebrate_at": agenda_item.celebrate_at.isoformat(),
-            "for_chat": agenda_item.for_chat,
-            "message": agenda_item.message,
-            "anniversary": agenda_item.anniversary,
-            "last_celebration": None
-        }
-
-        self.db.insert(self.table_name, agenda_dict)
+        self.db.insert(self.table_name, asdict(agenda_item))
         return agenda_item
 
     def get_all_agenda_items(self) -> List[Agenda]:
@@ -243,6 +231,20 @@ class AgendaManager:
         )
 
     async def check_agenda(self, telegram: Telegram):
+        """
+        Continuously checks the agenda for events that need to be triggered.
+        
+        This method runs in an infinite loop checking for monthly events (including those
+        scheduled for the 31st which trigger on the last day of months with fewer days) 
+        and annual/one-time events. When an event is due, it sends the appropriate message
+        via Telegram and marks the event as celebrated.
+
+        Args:
+            telegram: Telegram instance used to send messages to chats
+
+        Returns:
+            None. Method runs indefinitely until the program is terminated.
+        """
         while True:
             try:
                 datetime_manager = DatetimeManager()
@@ -261,7 +263,8 @@ class AgendaManager:
                         # For events scheduled on the 31st, we want to trigger on the last day of each month
                         if str(date.day) == "31":
                             # Calculate the last day of the current month
-                            last_day_of_month = (datetime(year, month, 28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+                            last_day_of_month = (datetime(year, month, 28) + timedelta(days=4)).replace(
+                                day=1) - timedelta(days=1)
                             # Check if today is the last day of the month
                             if day == last_day_of_month.day:
                                 if entry.last_celebration is None or entry.last_celebration.month != month:
@@ -295,7 +298,7 @@ class AgendaManager:
 
                         if date.day == day and date.month == month and (
                                 (
-                                    not entry.frequency == "annual" and date.year == year
+                                        not entry.frequency == "annual" and date.year == year
                                 )
                                 or entry.frequency == "annual"
                         ):
