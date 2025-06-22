@@ -1,5 +1,6 @@
 # Project
 import random
+import asyncio
 
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
@@ -8,7 +9,8 @@ from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.daily_flags import DailyFlags
 from pedro.data_structures.telegram_message import Message
-from pedro.utils.prompt_utils import create_basic_prompt, text_trigger, check_web_search
+from pedro.utils.prompt_utils import create_basic_prompt, text_trigger, check_web_search, send_telegram_log, \
+    create_self_complement_prompt
 from pedro.utils.text_utils import adjust_pedro_casing
 
 
@@ -47,3 +49,46 @@ async def default(
                 reply_to=message.message_id,
                 disable_web_page_preview=web_search
             )
+
+        await _randomly_keeps_reacting(
+            message=message,
+            history=history,
+            telegram=telegram,
+            user_data=user_data,
+            llm=llm,
+        )
+
+
+async def _randomly_keeps_reacting(
+        message: Message,
+        history: ChatHistory,
+        telegram: Telegram,
+        user_data: UserDataManager,
+        llm: LLM
+):
+    if random.random() > 0.15:
+        return
+
+    with sending_action(chat_id=message.chat.id, telegram=telegram):
+        prompt = await create_self_complement_prompt(
+            history=history,
+            chat_id=message.chat.id,
+            telegram=telegram,
+            llm=llm,
+            user_data=user_data
+        )
+
+        response = await adjust_pedro_casing(
+            await llm.generate_text(prompt)
+        )
+
+        await history.add_message(response, chat_id=message.chat.id, is_pedro=True)
+
+        if "agressivo" in prompt.lower():
+            response = response.upper()
+
+        await telegram.send_message(
+            message_text=response,
+            chat_id=message.chat.id,
+            sleep_time=3 + (round(random.random()) * 4)
+        )

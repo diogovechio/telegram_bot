@@ -137,6 +137,42 @@ async def create_basic_prompt(
     return prompt
 
 
+async def create_self_complement_prompt(
+        history: ChatHistory,
+        chat_id: int,
+        telegram: Telegram,
+        llm: LLM,
+        user_data: UserDataManager = None,
+        total_messages=5
+) -> str:
+    datetime = DatetimeManager()
+
+    chat_history = history.get_friendly_last_messages(chat_id=chat_id, limit=total_messages)
+
+    if random.random() < 0.7:
+        base_prompt = (
+            "Você é o Pedro. Complemente a mensagem que acabou de enviar. Seja sucinto. Não faça novos cumprimentos. "
+            "Não repita o que já foi dito, apenas complemente.\n\n"
+        )
+    else:
+        base_prompt = (
+            "Você é o Pedro. Complemente a mensagem que acabou de enviar. Porém dessa vez seja passivo agressivo. "
+            "Seja sucinto, em no máximo 5 palavras. Sua mensagem deve complementar a sua anterior.\n\n"
+        )
+
+    prompt = base_prompt + chat_history + f"\n{datetime.get_current_time_str()} - Pedro (pedroleblonbot):"
+
+    if telegram:
+        asyncio.create_task(
+            send_telegram_log(
+                telegram=telegram,
+                message_text=prompt
+            )
+        )
+
+    return prompt
+
+
 def text_trigger(message: Message, daily_flags: DailyFlags) -> bool:
     if random.random() < 0.15 and not daily_flags.random_talk_today:
         daily_flags.random_talk_today = True

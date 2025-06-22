@@ -6,7 +6,7 @@
 
 This project requires several Python dependencies which are listed in the `requirements.txt` file.
 
-To ensure secure installation of dependencies, we've provided scripts that include trusted host flags for PyPI:
+The installation scripts now create a virtual environment to avoid conflicts with system packages and to work with Python's externally managed environment restrictions.
 
 #### Windows Users
 
@@ -25,11 +25,22 @@ chmod +x install_dependencies.sh
 ./install_dependencies.sh
 ```
 
-#### Manual Installation
+#### Manual Installation with Virtual Environment
 
-If you prefer to install dependencies manually, use:
+If you prefer to install dependencies manually, you can create and use a virtual environment:
 
 ```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate the virtual environment
+# On Linux/Mac:
+source venv/bin/activate
+# On Windows:
+venv\Scripts\activate.bat
+
+# Install dependencies
+pip install --upgrade pip
 pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
 ```
 
@@ -42,8 +53,23 @@ Before running the bot, make sure to configure:
 
 ## Running the Bot
 
-To start the bot, run:
+To start the bot, first activate the virtual environment (if not already activated):
+
+```bash
+# On Linux/Mac:
+source venv/bin/activate
+# On Windows:
+venv\Scripts\activate.bat
+```
+
+Then run the application:
 
 ```bash
 python run.py
+```
+
+When you're done, you can deactivate the virtual environment:
+
+```bash
+deactivate
 ```
