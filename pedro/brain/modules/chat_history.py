@@ -25,7 +25,7 @@ class ChatHistory:
     """
     A class to manage chat history for Telegram conversations.
 
-    This class handles storing, retrieving and processing chat messages, including 
+    This class handles storing, retrieving and processing chat messages, including
     text messages and images. Messages are stored in JSON files organized by chat ID
     and date.
 
@@ -61,7 +61,7 @@ class ChatHistory:
 
     async def _process_image(self, message: Message) -> str:
         """
-        Process an image message and generate a description using LLM.
+        Process an image message and generate a short description using LLM.
         
         Args:
             message (Message): The Telegram message containing an image.
@@ -86,13 +86,23 @@ class ChatHistory:
                 logger.warning("Failed to download image")
                 return message.text or message.caption or ""
 
-            prompt = "Descreva a imagem com o máximo de detalhes identificáveis"
+            model = "gpt-4.1-nano"
+            prompt = "Faça uma curta descrição da imagem, máximo 10 palavras."
+            bot_in_prompt = message.caption and "pedro" in message.caption.lower()
 
-            if message.caption:
+            if bot_in_prompt:
                 prompt = f"Descreva a imagem e responda: '{message.caption}'"
-            description = await self.llm.generate_text(prompt=prompt, model="gpt-4.1-mini", image=image)
+                model = "gpt-4.1-mini"
 
-            formatted_text = f"[[IMAGEM ANEXADA: {description} ]]"
+            description = await self.llm.generate_text(prompt=prompt, model=model, image=image)
+
+            if not bot_in_prompt:
+                description = (f"{description} "
+                               f"[[Caso seja perguntado a Pedro algo sobre a imagem. "
+                               f"Peça para sinalizá-la para mais detalhes]]")
+                formatted_text = f"[[CURTA DESCRIÇÃO DE IMAGEM ANEXADA: {description} ]]"
+            else:
+                formatted_text = f"[[IMAGEM ANEXADA: {description} ]]"
 
             if message.caption:
                 formatted_text = f"{message.caption}\n\n{formatted_text}"
