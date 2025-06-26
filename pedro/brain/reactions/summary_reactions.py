@@ -1,4 +1,5 @@
 # Internal
+import random
 import re
 import typing as T
 from dataclasses import dataclass
@@ -86,18 +87,23 @@ async def handle_command_with_parameters(
         limit=150
     )
 
+    prompt = ""
     if search_text:
-        prompt = f'resuma o que foi falado sobre o tema "{search_text}" na conversa abaixo'
+        for user in user_data.get_users():
+            if search_text.lower() in user.lower():
+                prompt = f'resuma o que {user} tem falado na conversa abaixo'
+                break
+
+        if not prompt:
+            prompt = f'resuma o que foi falado sobre o tema "{search_text}" na conversa abaixo'
     else:
-        prompt = f'resuma o que foi falado na conversa abaixo'
+        if not days or days < 2:
+            prompt = "em no máximo 500 caracteres, faça um resumo da conversa abaixo"
+        else:
+            prompt = "detalhando tudo o que foi conversado, faça um resumo da conversa abaixo"
 
     if topics:
         prompt = "em no máximo 7 tópicos de no máximo 6 palavras cada, " + prompt
-
-    for user in user_data.get_users():
-        if search_text.lower() in user.lower():
-            prompt = f'resuma o que {user} tem falado na conversa abaixo'
-            break
 
     summary = await llm.generate_text(
         prompt=f"{prompt}:\n\n{chat_history}",
@@ -124,7 +130,6 @@ async def handle_basic_summarization(
     telegram: Telegram,
     llm: LLM,
     topics: bool,
-    days: int
 ) -> str:
     chat_history = history.get_friendly_messages_since_last_from_user(
         chat_id=message.chat.id,
@@ -135,10 +140,10 @@ async def handle_basic_summarization(
         prompt = "em no máximo 7 tópicos de no máximo 6 palavras cada, " \
                  "cite de maneira enumerada os principais temas discutidos na conversa abaixo"
     else:
-        if not days or days < 2:
-            prompt = "em no máximo 500 caracteres, faça um resumo da conversa abaixo"
-        else:
-            prompt = "detalhando tudo o que foi conversado, faça um resumo da conversa abaixo"
+        prompt = random.choice(
+            ["em no máximo 500 caracteres, faça um resumo da conversa abaixo",
+             f"em no máximo 500 caracteres, faça um curto resumo da conversa de {message.from_.first_name} e seus amigos"],
+        )
 
     summary = await llm.generate_text(
         prompt=f"{prompt}:\n\n{chat_history}",
@@ -225,6 +230,6 @@ async def summary_reaction(
         elif " " in message.text or any(letter.isdigit() for letter in message.text):
             summary = await handle_command_with_parameters(message, history, telegram, user_data, llm, topics, days)
         else:
-            summary = await handle_basic_summarization(message, history, telegram, llm, topics, days)
+            summary = await handle_basic_summarization(message, history, telegram, llm, topics)
 
         await update_chat_title(message, telegram, llm, summary)
