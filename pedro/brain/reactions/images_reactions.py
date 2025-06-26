@@ -5,6 +5,7 @@ from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.brain.reactions.fact_check import fact_check
+from pedro.data_structures.images import MessageImage
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.prompt_utils import image_trigger, create_basic_prompt
 from pedro.utils.text_utils import adjust_pedro_casing
@@ -17,9 +18,8 @@ async def images_reaction(
         user_data: UserDataManager,
         llm: LLM,
 ) -> None:
-    if message.photo:
+    if message.photo or message.document:
         image = await telegram.image_downloader(message)
-
         if image and message.from_.username in ["nands93", "decaptor"]:
             with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
                 political_prompt = ("Analise esta imagem e verifique se ela contém conteúdo de cunho político ou "
@@ -50,3 +50,4 @@ async def images_reaction(
                     chat_id=message.chat.id,
                     reply_to=message.message_id,
                 )
+    return None

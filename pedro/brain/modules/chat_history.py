@@ -62,14 +62,14 @@ class ChatHistory:
     async def _process_image(self, message: Message) -> str:
         """
         Process an image message and generate a short description using LLM.
-        
+
         Args:
             message (Message): The Telegram message containing an image.
-            
+
         Returns:
             str: A formatted string containing the image description and caption if present.
                 Returns empty string or caption if image processing fails.
-                
+
         Note:
             Requires telegram and llm attributes to be set.
         """
@@ -112,10 +112,48 @@ class ChatHistory:
             logger.exception(f"Error processing image: {e}")
             return message.text or message.caption or ""
 
+    async def _process_document(self, message: Message) -> str:
+        """
+        Process a document message and format it for storage.
+
+        Args:
+            message (Message): The Telegram message containing a document.
+
+        Returns:
+            str: A formatted string containing the document information and caption if present.
+                Returns empty string or caption if document processing fails.
+
+        Note:
+            Requires telegram attribute to be set.
+        """
+        if not self.telegram:
+            logger.warning("Telegram not provided, cannot process document")
+            return message.text or message.caption or ""
+
+        if not message.document:
+            return message.text or message.caption or ""
+
+        try:
+            document = await self.telegram.document_downloader(message)
+            if not document:
+                logger.warning("Failed to download document")
+                return message.text or message.caption or ""
+
+            file_info = f"Nome: {document.file_name}, Tipo: {document.mime_type}"
+            formatted_text = f"[[DOCUMENTO ANEXADO: {file_info}]]"
+
+            if message.caption:
+                formatted_text = f"{message.caption}\n\n{formatted_text}"
+
+            return formatted_text
+        except Exception as e:
+            logger.exception(f"Error processing document: {e}")
+            return message.text or message.caption or ""
+
     async def add_message(self, message: Message | ReplyToMessage | str, chat_id: int, is_pedro: bool = False):
         """
         Adds a message to the chat history database.
-        
+
         This method processes different types of messages (Message, ReplyToMessage, or str) and stores them in a
         JSON database organized by chat ID and date. It handles user information extraction, image processing if 
         applicable, and database operations.
@@ -157,9 +195,11 @@ class ChatHistory:
             first_name = message.from_.first_name or ""
             last_name = message.from_.last_name or ""
 
-            # Check if message has a photo and process it
+            # Check if message has a photo or document and process it
             if message.photo and self.telegram and self.llm:
                 message_text = await self._process_image(message)
+            elif message.document and self.telegram:
+                message_text = await self._process_document(message)
             else:
                 message_text = message.text or message.caption or ""
 

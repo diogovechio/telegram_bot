@@ -183,7 +183,7 @@ def text_trigger(message: Message, daily_flags: DailyFlags) -> bool:
     return (
             message.text and
             (message.text.lower().startswith("pedro") or message.text.lower().replace("?", "").strip().endswith(
-                "pedro"))
+                "pedro") or message.from_.id > 0)
     ) or (
             message.reply_to_message and "pedro" in message.reply_to_message.from_.username and not message.text.startswith("/")
     )
@@ -192,7 +192,7 @@ def image_trigger(message: Message) -> bool:
     return (
             message.caption and
             (message.caption.lower().startswith("pedro") or message.caption.lower().replace("?", "").strip().endswith(
-                "pedro"))
+                "pedro") or message.from_.id > 0)
     )
 
 

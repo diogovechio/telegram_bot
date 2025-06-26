@@ -18,6 +18,15 @@ class Photo:
 
 
 @dataclass
+class Document:
+    file_id: T.Optional[str] = None
+    file_unique_id: T.Optional[str] = None
+    file_size: T.Optional[int] = None
+    file_name: T.Optional[str] = None
+    mime_type: T.Optional[str] = None
+
+
+@dataclass
 class Chat:
     id: int
     first_name: T.Optional[str] = None
@@ -47,6 +56,7 @@ class ReplyToMessage:
     text: T.Optional[str] = None
     caption: T.Optional[str] = None
     photo: T.Optional[T.List[Photo]] = None
+    document: T.Optional[Document] = None
 
 
 @dataclass
@@ -58,6 +68,7 @@ class Message:
     text: T.Optional[str] = None
     reply_to_message: T.Optional[ReplyToMessage] = None
     photo: T.Optional[T.List[Photo]] = None
+    document: T.Optional[Document] = None
     edit_date: T.Optional[int] = None
     caption: T.Optional[str] = None
 

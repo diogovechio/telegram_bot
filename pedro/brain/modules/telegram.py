@@ -9,7 +9,7 @@ import random
 # External
 import aiohttp
 
-from pedro.data_structures.images import MessageImage
+from pedro.data_structures.images import MessageImage, MessageDocument
 # Project
 from pedro.data_structures.telegram_message import Message, MessagesResults, MessageReceived
 from pedro.data_structures.max_size_list import MaxSizeList
@@ -66,6 +66,17 @@ class Telegram:
             self,
             message: Message,
     ) -> None | MessageImage:
+        if not message.photo and message.document:
+            document = await self.document_downloader(message)
+
+            if document and document.mime_type in ["image/jpeg", "image/png"]:
+                return MessageImage(
+                    url=document.url,
+                    bytes=document.bytes
+                )
+            else:
+                return None
+
         async with self._session.get(
                 f"{self._api_route}/getFile?file_id={message.photo[-1].file_id}") as request:
             if 200 <= request.status < 300:
@@ -81,6 +92,32 @@ class Telegram:
                             )
                         else:
                             logging.critical(f"Image download failed: {download_request.status}")
+
+    async def document_downloader(
+            self,
+            message: Message,
+            limit_mb: int = 10,
+    ) -> None | MessageDocument:
+        if not message.document or message.document.file_size > limit_mb * 1024 * 1024:
+            return None
+
+        async with self._session.get(
+                f"{self._api_route}/getFile?file_id={message.document.file_id}") as request:
+            if 200 <= request.status < 300:
+                response = json.loads(await request.text())
+                if 'ok' in response and response['ok']:
+                    file_path = response['result']['file_path']
+                    url = f"{self._api_route.replace('.org/bot', '.org/file/bot')}/{file_path}"
+                    async with self._session.get(url) as download_request:
+                        if 200 <= download_request.status < 300:
+                            return MessageDocument(
+                                url=url,
+                                bytes=await download_request.read(),
+                                file_name=message.document.file_name or "document",
+                                mime_type=message.document.mime_type or "application/octet-stream"
+                            )
+                        else:
+                            logging.critical(f"Document download failed: {download_request.status}")
 
     async def send_photo(self, image: bytes, chat_id: int, caption=None, reply_to=None, sleep_time=0, max_retries=5) -> None:
         await asyncio.sleep(sleep_time)
