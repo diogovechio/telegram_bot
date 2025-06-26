@@ -40,7 +40,7 @@ async def images_reaction(
                 message=message, memory=history, user_data=user_data, total_messages=3, telegram=telegram, llm=llm)
 
                 response = await adjust_pedro_casing(
-                    await llm.generate_text(prompt, model="gpt-4.1-mini", image=image)
+                    await llm.generate_text(prompt, model="gpt-4.1" if image.from_doc else "gpt-4.1-mini", image=image)
                 )
 
                 await history.add_message(response, chat_id=message.chat.id, is_pedro=True)

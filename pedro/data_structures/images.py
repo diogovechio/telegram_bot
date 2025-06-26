@@ -4,6 +4,7 @@ from pydantic.dataclasses import dataclass
 class MessageImage:
     bytes: bytes
     url: str
+    from_doc: bool = False
 
 @dataclass
 class MessageDocument:

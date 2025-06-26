@@ -72,7 +72,8 @@ class Telegram:
             if document and document.mime_type in ["image/jpeg", "image/png"]:
                 return MessageImage(
                     url=document.url,
-                    bytes=document.bytes
+                    bytes=document.bytes,
+                    from_doc=True
                 )
             else:
                 return None
