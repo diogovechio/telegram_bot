@@ -41,6 +41,11 @@ async def default(
                 await llm.generate_text(prompt, model=model, web_search=web_search)
             )
 
+            if "desculpe" in response.lower():
+                response = await adjust_pedro_casing(
+                    await llm.generate_text(prompt, model="gpt-4.1-mini", web_search=web_search)
+                )
+
             await history.add_message(response, chat_id=message.chat.id, is_pedro=True)
 
             await telegram.send_message(
