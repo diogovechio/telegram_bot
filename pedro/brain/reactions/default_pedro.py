@@ -10,7 +10,7 @@ from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.daily_flags import DailyFlags
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.prompt_utils import create_basic_prompt, text_trigger, check_web_search, send_telegram_log, \
-    create_self_complement_prompt
+    create_self_complement_prompt, negative_response
 from pedro.utils.text_utils import adjust_pedro_casing
 
 
@@ -32,7 +32,7 @@ async def default(
             prompt = await create_basic_prompt(
                 message, history,
                 user_data=None if web_search else user_data,
-                total_messages=3 if web_search else 10,
+                total_messages=2 if web_search else 5,
                 telegram=telegram,
                 llm=llm
             )
@@ -41,10 +41,17 @@ async def default(
                 await llm.generate_text(prompt, model=model, web_search=web_search)
             )
 
-            if "desculpe" in response.lower():
+            if negative_response:
+                model = "gpt-4.1-mini"
                 response = await adjust_pedro_casing(
-                    await llm.generate_text(prompt, model="gpt-4.1-mini", web_search=web_search)
+                    await llm.generate_text(prompt, model=model, web_search=web_search)
                 )
+
+                if negative_response:
+                    model = "gpt-3.5-turbo-instruct"
+                    response = await adjust_pedro_casing(
+                        await llm.generate_text(prompt, model=model, web_search=web_search)
+                    )
 
             await history.add_message(response, chat_id=message.chat.id, is_pedro=True)
 
