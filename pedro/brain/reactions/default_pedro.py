@@ -41,7 +41,7 @@ async def default(
                 await llm.generate_text(prompt, model=model, web_search=web_search)
             )
 
-            if negative_response:
+            if negative_response and not web_search:
                 model = "gpt-4.1-mini"
                 response = await adjust_pedro_casing(
                     await llm.generate_text(prompt, model=model, web_search=web_search)
