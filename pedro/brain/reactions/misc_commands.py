@@ -16,7 +16,7 @@ from pedro.utils.text_utils import create_username
 logger = logging.getLogger(__name__)
 
 # Constants
-MAX_MOOD = 10
+MAX_SENTIMENT = 10
 
 
 async def misc_commands_reaction(
@@ -45,15 +45,15 @@ async def handle_me_command(
     user_data: UserDataManager,
     llm: LLM = None,
 ) -> None:
-    """Handle the /me command, showing user ID, chat ID, and mood score."""
-    user_mood = 0
+    """Handle the /me command, showing user ID, chat ID, and sentiment score."""
+    user_sentiment = 0
     user_opinions = []
 
     username = create_username(message.from_.first_name, message.from_.username)
     for user_opinion in user_data.get_all_user_opinions():
         user_name = create_username(user_opinion.first_name, user_opinion.username)
         if username == user_name:
-            user_mood = round(user_opinion.my_mood_with_him, 2)
+            user_sentiment = round(user_opinion.relationship_sentiment, 2)
             user_opinions = user_opinion.opinions
 
     opinion_message = "Nada."
@@ -71,7 +71,7 @@ async def handle_me_command(
     await telegram.send_message(
         message_text=f"*ID:* `{message.from_.id}`\n"
                      f"*Chat ID:* `{message.chat.id}`\n"
-                     f"*Meu ódio por você:* `{user_mood}`\n"
+                     f"*Meu ódio por você:* `{user_sentiment}`\n"
                      f"*O que penso e sei sobre você:* `{opinion_message}`",
         chat_id=message.chat.id,
         reply_to=message.message_id,
@@ -169,34 +169,34 @@ async def handle_puto_command(
 ) -> None:
     username = create_username(message.from_.first_name, message.from_.username)
 
-    # Get user mood
-    user_mood = 0
+    # Get user sentiment
+    user_sentiment = 0
     for user_opinion in user_data.get_all_user_opinions():
         user_name = create_username(user_opinion.first_name, user_opinion.username)
         if username == user_name:
-            user_mood = round(user_opinion.my_mood_with_him, 2)
+            user_sentiment = round(user_opinion.relationship_sentiment, 2)
 
-    if user_mood < 0:
-        user_mood = 0
+    if user_sentiment < 0:
+        user_sentiment = 0
 
     with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
-        prompt = f"considere que você é o pedro.\nem uma escala de 0 a {MAX_MOOD}, " \
+        prompt = f"considere que você é o pedro.\nem uma escala de 0 a {MAX_SENTIMENT}, " \
                  f"onde:\n" \
                  f"0 = extremamente contente, melhores amigos\n" \
                  f"1 = contente" \
                  f"\n...\n" \
                  f"5 = neutro" \
                  f"\n...\n" \
-                 f"{MAX_MOOD - 1} = puto" \
-                 f"\n{MAX_MOOD} = extremamente puto:\n"
+                 f"{MAX_SENTIMENT - 1} = puto" \
+                 f"\n{MAX_SENTIMENT} = extremamente puto:\n"
 
         if message.text.startswith('/putos'):
             persons = ""
             for user_opinion in user_data.get_all_user_opinions():
-                mood = user_opinion.my_mood_with_him
-                if mood > 3:
+                sentiment = user_opinion.relationship_sentiment
+                if sentiment > 2:
                     user_name = create_username(user_opinion.first_name, user_opinion.username)
-                    persons += f"{user_name.split(' ')[0]}: {int(mood)}\n"
+                    persons += f"{user_name.split(' ')[0]}: {int(sentiment)}\n"
 
             if persons:
                 prompt += f"temos as seguintes pessoas seguidas da escala do quanto você está puto com elas:\n\n{persons}\n\n" \
@@ -205,7 +205,7 @@ async def handle_puto_command(
             else:
                 prompt = "diga que não está irritado com ninguém.\npedro:"
         else:
-            prompt += f"temos o seguinte valor:\n\n{user_mood}\n\nentão, dentro da escala, " \
+            prompt += f"temos o seguinte valor:\n\n{user_sentiment}\n\nentão, dentro da escala, " \
                  f"diga para o {username} o quanto você " \
                  f"está contente ou puto com ele. sem dizer exatamente os valores e nem revelar a escala." \
                  f"\n{'dê um exemplo de como você se sente com isso.' if round(random.random()) else 'faça uma curta poesia sobre isso.'}\n\n" \

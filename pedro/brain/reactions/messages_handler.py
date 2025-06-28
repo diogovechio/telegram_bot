@@ -9,6 +9,7 @@ from pedro.brain.modules.agenda import AgendaManager
 from pedro.brain.reactions.default_pedro import default
 from pedro.brain.reactions.fact_check import fact_check_reaction
 from pedro.brain.reactions.images_reactions import images_reaction
+from pedro.brain.reactions.random_reactions import random_reactions
 from pedro.brain.reactions.summary_reactions import summary_reaction
 from pedro.brain.reactions.agenda_commands import agenda_commands_reaction
 from pedro.brain.reactions.complain_swearword import complain_swearword_reaction
@@ -68,4 +69,5 @@ async def messages_handler(
             misc_commands_reaction(updated_message, history, telegram, user_data, llm),
             critic_or_praise_reaction(updated_message, history, telegram, user_data, llm),
             weather_commands_reaction(updated_message, history, telegram, user_data, llm, config),
+            random_reactions(updated_message, telegram, user_data, daily_flags),
         )

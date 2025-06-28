@@ -15,7 +15,6 @@ from pedro.data_structures.user_data import UserData
 from pedro.data_structures.telegram_message import Message, From, Chat
 from pedro.brain.modules.database import Database
 from pedro.utils.text_utils import create_username
-from pedro.data_structures.chat_log import ChatLog
 
 
 class UserDataManager:
@@ -27,30 +26,30 @@ class UserDataManager:
         self.table_name = "user_data"
         self.max_opinions = max_opinions
 
-        self.moods_levels = [
+        self.sentiment_levels = [
             "Responda de maneira sucinta. Evitando comentários desnecessários.",
             "Responda de acordo com sua opinião sobre o usuário que enviou a mensagem.",
             "Seja impaciente e passivo agressivo. Responda de acordo com sua opinião sobre o usuário que enviou a mensagem."
         ]
 
-        # Start the mood decay loop
-        asyncio.create_task(self.mood_decay_loop())
+        # Start the sentiment decay loop
+        asyncio.create_task(self.sentiment_decay_loop())
 
-    def get_mood_level_prompt(self, user_id: int) -> str:
+    def get_sentiment_level_prompt(self, user_id: int) -> str:
         level = 0
-        user_opinion = self.get_user_opinion(user_id)
+        user_opinion = self.get_user_data(user_id)
 
         if user_opinion:
-            level = round(user_opinion.my_mood_with_him)
+            level = round(user_opinion.relationship_sentiment)
 
-            if level > len(self.moods_levels) - 1:
-                level = len(self.moods_levels) - 1
+            if level > len(self.sentiment_levels) - 1:
+                level = len(self.sentiment_levels) - 1
             elif level < 0:
                 level = 0
 
-        return self.moods_levels[level]
+        return self.sentiment_levels[level]
 
-    def get_user_opinion(self, user_id: int) -> Optional[UserData]:
+    def get_user_data(self, user_id: int) -> Optional[UserData]:
         results = self.database.search(self.table_name, {"user_id": user_id})
         if results:
             return UserData(**results[0])
@@ -120,21 +119,21 @@ class UserDataManager:
 
         return matching_users
 
-    def adjust_mood_by_user_id(self, user_id: int, mood_adjustment: float) -> Optional[UserData]:
-        user_opinion = self.get_user_opinion(user_id)
+    def adjust_sentiment_by_user_id(self, user_id: int, sentiment_adjust: float) -> Optional[UserData]:
+        user_opinion = self.get_user_data(user_id)
         if not user_opinion:
             return None
 
-        # Adjust the mood
-        user_opinion.my_mood_with_him += mood_adjustment
+        # Adjust the sentiment
+        user_opinion.relationship_sentiment += sentiment_adjust
 
-        if user_opinion.my_mood_with_him < 0.0:
-            user_opinion.my_mood_with_him = 0.0
+        if user_opinion.relationship_sentiment < 0.0:
+            user_opinion.relationship_sentiment = 0.0
 
         # Update the user opinion in the database
         self.database.update(
             self.table_name,
-            {"my_mood_with_him": user_opinion.my_mood_with_him},
+            {"relationship_sentiment": user_opinion.relationship_sentiment},
             {"user_id": user_id}
         )
 
@@ -143,7 +142,7 @@ class UserDataManager:
     def add_user_if_not_exists(self, message: Message) -> UserData:
         user_from = message.from_
 
-        existing_user = self.get_user_opinion(user_from.id)
+        existing_user = self.get_user_data(user_from.id)
 
         if existing_user:
             return existing_user
@@ -154,7 +153,7 @@ class UserDataManager:
             first_name=user_from.first_name,
             last_name=user_from.last_name,
             opinions=[],
-            my_mood_with_him=0.0
+            relationship_sentiment=0.0
         )
 
         self.database.insert(self.table_name, asdict(user_opinion))
@@ -169,8 +168,7 @@ class UserDataManager:
                  f"1 - Mensagem amorosa\n" \
                  f"2 - Mensagem amigável\n" \
                  f"3 - Mensagem neutra\n" \
-                 f"4 - Mensagem grosseira\n" \
-                 f"5 - Mensagem ofensiva\n\n" \
+                 f"4 - Mensagem grosseira ou ofensiva\n" \
                  f"Não faça qualquer comentário além de responder um número de 1 a 5."
 
         response = await self.llm.generate_text(prompt)
@@ -219,7 +217,7 @@ class UserDataManager:
         user_opinion = None
 
         if user_id is not None:
-            user_opinion = self.get_user_opinion(user_id)
+            user_opinion = self.get_user_data(user_id)
 
         if user_opinion is None and username is not None:
             all_users = self.get_all_user_opinions()
@@ -342,39 +340,39 @@ class UserDataManager:
 
         logging.info("Finished processing historical messages for all users")
 
-    async def mood_decay_loop(self):
+    async def sentiment_decay_loop(self):
         """
-        Runs in an infinite loop, decreasing the my_mood_with_him value for each user by 0.2 every 10 minutes,
+        Runs in an infinite loop, decreasing the relationship_sentiment value for each user by 0.2 every 10 minutes,
         until it reaches a minimum of 0.0.
         """
-        logging.info("Starting mood decay loop")
+        logging.info("Starting sentiment decay loop")
         while True:
             try:
                 # Get all user opinions
                 all_users = self.get_all_user_opinions()
 
                 if not all_users:
-                    logging.warning("No users found in database for mood decay")
+                    logging.warning("No users found in database for sentiment decay")
                     await asyncio.sleep(60)
                     continue
 
-                logging.info(f"Processing mood decay for {len(all_users)} users")
+                logging.info(f"Processing sentiment decay for {len(all_users)} users")
 
-                # For each user with my_mood_with_him > 0.0, decrease it by 0.2
+                # For each user with relationship_sentiment > 0.0, decrease it by 0.2
                 for user in all_users:
-                    if user.my_mood_with_him > 0.0:
+                    if user.relationship_sentiment > 0.0:
                         # Decrease by 0.1, but not below 0.0
-                        self.adjust_mood_by_user_id(user.user_id, -0.1)
-                        logging.info(f"Decreased mood for user {user.user_id} by 0.2")
+                        self.adjust_sentiment_by_user_id(user.user_id, -0.1)
+                        logging.info(f"Decreased sentiment for user {user.user_id} by 0.1")
 
                 # Sleep for 10 minutes (600 seconds)
                 await asyncio.sleep(600)
             except Exception as e:
-                logging.error(f"Error in mood decay loop: {e}")
+                logging.error(f"Error in sentiment decay loop: {e}")
                 # Sleep for a short time before retrying in case of error
                 await asyncio.sleep(60)
 
-    async def adjust_mood(self, message: Message) -> (int, str):
+    async def adjust_sentiment(self, message: Message) -> (int, str):
         text = ""
         message_tone = 3
         user_id = message.from_.id
@@ -389,24 +387,20 @@ class UserDataManager:
 
         reaction = ""
 
-        if message_tone == 5:
-            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=2.0)
-            reaction = "🖕"
         if message_tone == 4:
-            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=0.5)
-            reaction = random.choice(["🤬", "😡"])
-
+            self.adjust_sentiment_by_user_id(user_id=user_id, sentiment_adjust=4)
+            reaction = random.choice(["🤬", "😡", "🖕"])
         if message_tone == 2:
-            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=-1.0)
+            self.adjust_sentiment_by_user_id(user_id=user_id, sentiment_adjust=-1.0)
             reaction = random.choice(["🆒", "🗿"])
         if message_tone == 1:
-            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=-1.5)
+            self.adjust_sentiment_by_user_id(user_id=user_id, sentiment_adjust=-1.5)
             reaction = random.choice(["❤", "💘", "😘"])
 
         if message_tone == 0:
             reaction = random.choice(["🤔", "🥴", "🤨", "🙏", "🤷"])
 
-            self.adjust_mood_by_user_id(user_id=user_id, mood_adjustment=-50.0)
+            self.adjust_sentiment_by_user_id(user_id=user_id, sentiment_adjust=-50.0)
 
         if reaction:
             asyncio.create_task(

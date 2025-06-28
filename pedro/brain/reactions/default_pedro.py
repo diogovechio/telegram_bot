@@ -23,7 +23,7 @@ async def default(
         daily_flags: DailyFlags,
 ) -> None:
     if text_trigger(message=message, daily_flags=daily_flags):
-        await user_data.adjust_mood(message)
+        await user_data.adjust_sentiment(message)
 
         with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
             web_search = check_web_search(message)

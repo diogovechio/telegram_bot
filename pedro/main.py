@@ -72,7 +72,8 @@ class TelegramBot:
         self.daily_flags = DailyFlags(
             swearword_complain_today=False,
             swearword_random_reaction_today=False,
-            random_talk_today=False
+            random_talk_today=False,
+            random_tease_message=False
         )
 
         self.loop: T.Optional[AbstractEventLoop] = None

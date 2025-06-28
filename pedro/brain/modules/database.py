@@ -8,10 +8,11 @@ from datetime import datetime
 # External
 from tinydb import TinyDB, Query
 
+
 class Database:
     def __init__(self, db_path: str = "pedro_database.json"):
         self.db_path = db_path
-        self.db = TinyDB(db_path)
+        self.db = TinyDB(db_path, indent=4, encoding='utf-8')
         self.query = Query()
         self.default_db_name = "pedro_database.json"
 

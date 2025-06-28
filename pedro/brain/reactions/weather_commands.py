@@ -64,7 +64,7 @@ async def handle_previsao_command(
         # No location specified, try to use the last requested location
         location = None
         if user_data and message.from_:
-            user_opinion = user_data.get_user_opinion(message.from_.id)
+            user_opinion = user_data.get_user_data(message.from_.id)
             if user_opinion and user_opinion.last_weather_location:
                 location = user_opinion.last_weather_location
 

@@ -92,6 +92,9 @@ async def adjust_pedro_casing(
             if ai_message.lower().strip().startswith("pedro:"):
                 ai_message = ai_message.replace("pedro: ", "rs, ")
 
+            if ai_message.lower().strip().endswith("pedro"):
+                ai_message = ai_message.strip()[:-5]
+
             if ai_message:
                 while any(word in ai_message[0] for word in ['.', ',', '?', '\n', ' ', '!']):
                     ai_message = ai_message[1:]

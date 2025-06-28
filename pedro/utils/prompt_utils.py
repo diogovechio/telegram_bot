@@ -88,6 +88,7 @@ async def create_basic_prompt(
     datetime = DatetimeManager()
 
     chat_history = memory.get_friendly_last_messages(chat_id=message.chat.id, limit=total_messages)
+    users_opinions = []
 
     political_opinions = ""
     if any(political_word.lower() in chat_history.lower() for political_word in POLITICAL_WORDS):
@@ -104,26 +105,25 @@ async def create_basic_prompt(
         reply_text = await process_reply_message(message=message, telegram=telegram, llm=llm)
 
     if not user_data:
-        base_prompt = (f"Você é o Pedro, responda a mensagem '{text}' enviada "
+        base_prompt = (f"Você é o Pedro, responda a mensagem '{text} {reply_text}' enviada "
                        f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
     elif user_data and text:
-        base_prompt = (f"{user_data.get_mood_level_prompt(message.from_.id)}\n\nVocê é o Pedro, "
-                       f"responda a mensagem '{text}' enviada "
+        base_prompt = (f"{user_data.get_sentiment_level_prompt(message.from_.id)}\n\nVocê é o Pedro, "
+                       f"responda a mensagem '{text} {reply_text}' enviada "
                        f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
     else:
-        base_prompt = (f"{user_data.get_mood_level_prompt(message.from_.id)}\n\nVocê é o Pedro,"
-                       f" responda sobre imagem '{text}'enviada "
+        base_prompt = (f"{user_data.get_sentiment_level_prompt(message.from_.id)}\n\nVocê é o Pedro,"
+                       f" responda sobre imagem '{text} {reply_text}' enviada "
                        f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
 
     opinions_text = ""
 
-    if user_data:
-        for user_opinion in users_opinions:
-            if user_opinion.opinions:
-                user_display_name = create_username(user_opinion.first_name, user_opinion.username)
-                user_display_name = f"{user_opinion.first_name} - {user_display_name}"
-                user_opinions_text = "\n".join([f"Sobre {user_display_name}: {opinion[:100]}" for opinion in user_opinion.opinions])
-                opinions_text += f"### RESPONDA COM BASE NAS INFORMAÇÕES A SEGUIR SE FOR PERGUNTADO SOBRE ***{user_display_name}*** ### \n{user_opinions_text}\n\n"
+    for user_opinion in users_opinions:
+        if user_opinion.opinions:
+            user_display_name = create_username(user_opinion.first_name, user_opinion.username)
+            user_display_name = f"{user_opinion.first_name} - {user_display_name}"
+            user_opinions_text = "\n".join([f"Sobre {user_display_name}: {opinion[:100]}" for opinion in user_opinion.opinions])
+            opinions_text += f"### RESPONDA COM BASE NAS INFORMAÇÕES A SEGUIR SE FOR PERGUNTADO SOBRE ***{user_display_name}*** ### \n{user_opinions_text}\n\n"
 
     prompt = base_prompt + political_opinions + opinions_text + chat_history + reply_text + f"\n{datetime.get_current_time_str()} - Pedro (pedroleblonbot): "
 

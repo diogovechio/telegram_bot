@@ -11,6 +11,7 @@ import schedule
 from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.brain.modules.datetime_manager import DatetimeManager
 from pedro.brain.modules.telegram import Telegram
+from pedro.data_structures.daily_flags import DailyFlags
 
 
 def _convert_hour_if_needed(time_str: str) -> str:
@@ -31,7 +32,7 @@ def call_async_function(func):
 
 
 class Scheduler:
-    def __init__(self, user_opinions: UserDataManager, telegram: Telegram, daily_flags=None):
+    def __init__(self, user_opinions: UserDataManager, telegram: Telegram, daily_flags: DailyFlags | None = None):
         self.user_opinions = user_opinions
         self.datetime_manager = DatetimeManager()
         self.telegram = telegram
@@ -60,7 +61,12 @@ class Scheduler:
             self.daily_flags.swearword_complain_today = False
             self.daily_flags.swearword_random_reaction_today = False
             self.daily_flags.random_talk_today = False
+            self.daily_flags.random_tease_message = False
             logging.info("All daily flags have been reset to False")
+
+    async def _reset_random_tease_message(self):
+        if self.daily_flags:
+            self.daily_flags.random_tease_message = False
 
     async def run_scheduler(self):
         while self.running:
@@ -72,29 +78,39 @@ class Scheduler:
             logging.warning("Scheduler is already running")
             return
 
-        schedule.every().day.at(_convert_hour_if_needed("09:00")).do(
-            call_async_function,
-            self._run_process_historical_messages
+        schedule.every().day.at(
+            _convert_hour_if_needed("09:00")).do(
+                call_async_function,
+                self._run_process_historical_messages
         )
 
-        schedule.every().day.at(_convert_hour_if_needed("15:00")).do(
-            call_async_function,
-            self._run_process_historical_messages
+        schedule.every().day.at(
+            _convert_hour_if_needed("15:00")).do(
+                call_async_function,
+                self._run_process_historical_messages
         )
 
-        schedule.every().day.at(_convert_hour_if_needed("22:00")).do(
-            call_async_function,
-            self._run_process_historical_messages
+        schedule.every().day.at(
+            _convert_hour_if_needed("22:00")).do(
+                call_async_function,
+                self._run_process_historical_messages
         )
 
-        schedule.every().day.at(_convert_hour_if_needed("21:00")).do(
-            call_async_function,
-            self._run_database_backup
+        schedule.every().day.at(
+            _convert_hour_if_needed("21:00")).do(
+                call_async_function,
+                self._run_database_backup
         )
 
-        schedule.every().day.at(_convert_hour_if_needed("19:00")).do(
+        schedule.every().day.at(
+            _convert_hour_if_needed("19:00")).do(
+                call_async_function,
+                self._reset_daily_flags
+        )
+
+        schedule.every(3).hours.do(
             call_async_function,
-            self._reset_daily_flags
+            self._reset_random_tease_message
         )
 
         self.running = True
