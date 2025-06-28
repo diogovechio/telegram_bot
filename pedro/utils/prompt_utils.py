@@ -175,7 +175,7 @@ async def create_self_complement_prompt(
 
 
 def text_trigger(message: Message, daily_flags: DailyFlags) -> bool:
-    if random.random() < 0.15 and not daily_flags.random_talk_today:
+    if random.random() < 0.15 and not daily_flags.random_talk_today and not message.text.startswith("/"):
         daily_flags.random_talk_today = True
 
         return True
