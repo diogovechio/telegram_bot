@@ -23,7 +23,7 @@ async def images_reaction(
     if message.photo or message.document:
         image = await telegram.image_downloader(message)
         if image and message.from_.username in ["nands93", "decaptor"]:
-            with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
+            with sending_action(chat_id=message.chat.id, telegram=telegram):
                 political_prompt = ("Analise esta imagem e verifique se ela contém conteúdo de cunho político ou "
                                     "menciona algum político. "
                                     "Responda apenas com 'SIM', 'PROVÁVEL' ou 'NÃO'. "

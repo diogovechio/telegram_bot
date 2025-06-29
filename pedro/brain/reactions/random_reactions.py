@@ -16,7 +16,7 @@ async def random_reactions(
 ) -> None:
     user = user_data.get_user_data(message.from_.id)
 
-    if user.tease_messages and random.random() < 0.25 and not daily_flags.random_tease_message:
+    if user.tease_messages and random.random() < 0.2 and not daily_flags.random_tease_message:
         daily_flags.random_tease_message = True
 
         await telegram.send_message(

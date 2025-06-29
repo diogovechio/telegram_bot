@@ -102,7 +102,7 @@ class Scheduler:
                 self._reset_daily_flags
         )
 
-        schedule.every(3).hours.do(
+        schedule.every(8).hours.do(
             call_async_function,
             self._reset_random_tease_message
         )

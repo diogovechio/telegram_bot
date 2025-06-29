@@ -8,6 +8,7 @@ from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.data_structures.telegram_message import Message
+from pedro.utils.prompt_utils import get_photo_description
 
 # Constants
 OPENAI_TRASH_LIST = ["pedro:", "pedro", "pedro leblon:", "pedro leblon"]
@@ -32,7 +33,7 @@ async def _critic_or_praise(message, telegram, llm, history) -> None:
         if message.reply_to_message and message.reply_to_message.text:
             text = message.reply_to_message.text
         elif message.reply_to_message and message.reply_to_message.photo:
-            text = await history.get_photo_description(message.reply_to_message)
+            text = await get_photo_description(telegram=telegram, llm=llm, message=message.reply_to_message)
 
         user_name = message.reply_to_message.from_.first_name
 

@@ -81,6 +81,7 @@ async def fact_check(
             message_text = await llm.generate_text(
                 prompt=prompt_fact_checked,
                 temperature=0.7,
+                model=model
             )
 
             message_text = message_text.lower()

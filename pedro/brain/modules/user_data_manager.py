@@ -365,8 +365,8 @@ class UserDataManager:
                         self.adjust_sentiment_by_user_id(user.user_id, -0.1)
                         logging.info(f"Decreased sentiment for user {user.user_id} by 0.1")
 
-                # Sleep for 10 minutes (600 seconds)
-                await asyncio.sleep(600)
+                # Sleep for 20 minutes (1200 seconds)
+                await asyncio.sleep(1200)
             except Exception as e:
                 logging.error(f"Error in sentiment decay loop: {e}")
                 # Sleep for a short time before retrying in case of error
@@ -388,7 +388,7 @@ class UserDataManager:
         reaction = ""
 
         if message_tone == 4:
-            self.adjust_sentiment_by_user_id(user_id=user_id, sentiment_adjust=4)
+            self.adjust_sentiment_by_user_id(user_id=user_id, sentiment_adjust=1.0)
             reaction = random.choice(["🤬", "😡", "🖕"])
         if message_tone == 2:
             self.adjust_sentiment_by_user_id(user_id=user_id, sentiment_adjust=-1.0)
