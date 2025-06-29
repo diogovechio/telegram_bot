@@ -18,7 +18,7 @@ from pedro.utils.text_utils import create_username
 
 
 class UserDataManager:
-    def __init__(self, database: Database, llm: LLM, telegram: Telegram, chat_history=None, max_opinions: int = 10):
+    def __init__(self, database: Database, llm: LLM, telegram: Telegram, chat_history=None, max_opinions: int = 8):
         self.database = database
         self.llm = llm
         self.telegram = telegram

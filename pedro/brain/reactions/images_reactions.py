@@ -1,4 +1,6 @@
 # Project
+import asyncio
+
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
@@ -30,8 +32,13 @@ async def images_reaction(
                 response = await llm.generate_text(political_prompt, model="gpt-4.1-mini", image=image)
 
                 if "SIM" in response.upper() or "PROV" in response.upper():
-                    await fact_check(
-                        message, history, telegram, user_data, llm
+                    await asyncio.gather(
+                        telegram.set_message_reaction(
+                            message_id=message.message_id, chat_id=message.chat.id, reaction="💩"
+                        ),
+                        fact_check(
+                            message=message, history=history, telegram=telegram, user_data=user_data, llm=llm
+                        )
                     )
 
         elif image and image_trigger(message):
@@ -50,4 +57,5 @@ async def images_reaction(
                     chat_id=message.chat.id,
                     reply_to=message.message_id,
                 )
+
     return None

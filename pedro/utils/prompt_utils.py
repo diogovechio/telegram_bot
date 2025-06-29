@@ -85,6 +85,8 @@ async def create_basic_prompt(
         telegram: Telegram | None = None,
         llm: LLM | None = None,
 ) -> str:
+    base_prompt = ""
+
     datetime = DatetimeManager()
 
     chat_history = memory.get_friendly_last_messages(chat_id=message.chat.id, limit=total_messages)
@@ -95,26 +97,27 @@ async def create_basic_prompt(
         political_opinions = "\n".join(POLITICAL_OPINIONS)
         political_opinions = f"{political_opinions}\n\n"
 
-    if user_data:
-        users_opinions = user_data.get_users_by_text_match(chat_history)
-
     text = message.caption if message.caption else message.text
 
     reply_text = ""
     if message.reply_to_message:
         reply_text = await process_reply_message(message=message, telegram=telegram, llm=llm)
 
-    if not user_data:
-        base_prompt = (f"Você é o Pedro, responda a mensagem '{text} {reply_text}' enviada "
-                       f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
-    elif user_data and text:
-        base_prompt = (f"{user_data.get_sentiment_level_prompt(message.from_.id)}\n\nVocê é o Pedro, "
-                       f"responda a mensagem '{text} {reply_text}' enviada "
-                       f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
-    else:
-        base_prompt = (f"{user_data.get_sentiment_level_prompt(message.from_.id)}\n\nVocê é o Pedro,"
-                       f" responda sobre imagem '{text} {reply_text}' enviada "
-                       f"por {create_username(message.from_.first_name, message.from_.username)}.\n\n")
+    user_message = f"{text} {reply_text}"
+
+    if message.text:
+        base_prompt += (f"Você é o Pedro, responda a mensagem enviada por "
+                       f"{create_username(message.from_.first_name, message.from_.username)} "
+                       f"na conversa: ## {user_message} ##.\n\n")
+    elif message.photo:
+        base_prompt += (f"Você é o Pedro, responda sobre imagem enviada por"
+                       f" {create_username(message.from_.first_name, message.from_.username)} "
+                       f"na conversa: ## {user_message} ##.\n\n")
+
+    if user_data:
+        users_opinions = user_data.get_users_by_text_match(chat_history)
+
+        base_prompt += f"{user_data.get_sentiment_level_prompt(message.from_.id)}\n\n"
 
     opinions_text = ""
 
