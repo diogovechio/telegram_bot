@@ -7,16 +7,17 @@ from pedro.data_structures.telegram_message import Message
 
 
 async def https_url_extract(text: str) -> str:
-    final_text = ""
-    text = text[text.find('https://'):]
-    for letter in text:
-        if letter == " " or letter == "\n":
-            break
-        final_text += letter
-    if "https://" in final_text:
-        return final_text
-    else:
-        return ""
+    if text:
+        final_text = ""
+        text = text[text.find('https://'):]
+        for letter in text:
+            if letter == " " or letter == "\n":
+                break
+            final_text += letter
+        if "https://" in final_text:
+            return final_text
+
+    return ""
 
 
 async def youtube_caption_extractor(url: str, char_limit: int) -> str:

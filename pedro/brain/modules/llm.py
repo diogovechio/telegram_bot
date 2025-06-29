@@ -88,7 +88,7 @@ class LLM:
                             endpoint = "https://api.openai.com/v1/completions"
                             request_data = {
                                 "model": model,
-                                "prompt": prompt,
+                                "prompt": prompt[:3000],
                                 "temperature": temperature,
                                 "max_tokens": 1024,
                             }

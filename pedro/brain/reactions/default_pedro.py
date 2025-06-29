@@ -12,6 +12,7 @@ from pedro.data_structures.telegram_message import Message
 from pedro.utils.prompt_utils import create_basic_prompt, text_trigger, check_web_search, send_telegram_log, \
     create_self_complement_prompt, negative_response
 from pedro.utils.text_utils import adjust_pedro_casing
+from pedro.utils.url_utils import https_url_extract
 
 
 async def default(
@@ -41,13 +42,13 @@ async def default(
                 await llm.generate_text(prompt, model=model, web_search=web_search)
             )
 
-            if negative_response and not web_search:
+            if negative_response(response) and not web_search and len(response) < 100:
                 model = "gpt-4.1-mini"
                 response = await adjust_pedro_casing(
                     await llm.generate_text(prompt, model=model, web_search=web_search)
                 )
 
-                if negative_response:
+                if negative_response(response):
                     model = "gpt-3.5-turbo-instruct"
                     response = await adjust_pedro_casing(
                         await llm.generate_text(prompt, model=model, web_search=web_search)
