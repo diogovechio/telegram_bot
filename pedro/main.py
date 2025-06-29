@@ -133,8 +133,6 @@ class TelegramBot:
                     chat_history=self.chat_history,
                 )
 
-                self.loop.create_task(self.user_data.get_opinion_by_historical_messages())
-
                 self.scheduler = Scheduler(self.user_data, self.telegram, self.daily_flags)
                 self.scheduler.start()
 
