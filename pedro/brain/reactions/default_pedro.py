@@ -45,8 +45,8 @@ async def default(
             if negative_response(response) and not web_search and len(response) < 100:
                 prompt = await create_basic_prompt(
                     message, history,
-                    user_data=None,
-                    total_messages=3,
+                    user_data=user_data,
+                    total_messages=2,
                     telegram=telegram,
                     llm=llm
                 )
@@ -55,12 +55,6 @@ async def default(
                 response = await adjust_pedro_casing(
                     await llm.generate_text(prompt, model=model, web_search=web_search)
                 )
-
-                if negative_response(response):
-                    model = "gpt-3.5-turbo-instruct"
-                    response = await adjust_pedro_casing(
-                        await llm.generate_text(prompt, model=model, web_search=web_search)
-                    )
 
             await history.add_message(response, chat_id=message.chat.id, is_pedro=True)
 
