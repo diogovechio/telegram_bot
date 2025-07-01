@@ -33,7 +33,7 @@ async def default(
             prompt = await create_basic_prompt(
                 message, history,
                 user_data=None if web_search else user_data,
-                total_messages=2 if web_search else 7,
+                total_messages=1 if web_search else 7,
                 telegram=telegram,
                 llm=llm
             )
@@ -43,6 +43,14 @@ async def default(
             )
 
             if negative_response(response) and not web_search and len(response) < 100:
+                prompt = await create_basic_prompt(
+                    message, history,
+                    user_data=None,
+                    total_messages=3,
+                    telegram=telegram,
+                    llm=llm
+                )
+
                 model = "gpt-4.1-mini"
                 response = await adjust_pedro_casing(
                     await llm.generate_text(prompt, model=model, web_search=web_search)

@@ -45,7 +45,7 @@ async def fact_check(
     materialista e dialética sucinta da 'Análise da resposta', sem referência à abordagem 
     metodológica utilizada."""
 
-    with sending_action(chat_id=message.chat.id, telegram=telegram, user=message.from_.username):
+    with sending_action(chat_id=message.chat.id, telegram=telegram):
         if message.reply_to_message or message.photo:
             if message.reply_to_message and message.reply_to_message.text:
                 mentiroso_argument = message.reply_to_message.text

@@ -200,7 +200,7 @@ def image_trigger(message: Message) -> bool:
 
 
 def negative_response(text: str) -> bool:
-    return any(word in text.lower() for word in ["desculp", "não posso", "não vou"])
+    return any(word in text.lower() for word in ["desculpe,", "desculpa,", "desculpas,", "não posso ", "não vou "])
 
 async def get_photo_description(
         telegram: Telegram,

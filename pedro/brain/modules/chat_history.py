@@ -18,6 +18,12 @@ from pedro.brain.modules.database import Database
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.llm import LLM
 
+"""
+Module `chat_history` provides the ChatHistory class to record, store, and retrieve
+Telegram conversation logs. It supports processing of text, image, and document messages,
+filtering by date or user, and formatting of chat histories for friendly display.
+"""
+
 logger = logging.getLogger(__name__)
 
 
@@ -279,6 +285,18 @@ class ChatHistory:
             # Close the database connection
             db.close()
     def get_messages(self, chat_id: int, days_limit: int=0, max_messages: int=0) -> dict[str, list[ChatLog]]:
+        """
+        Retrieve chat logs for a specific chat, optionally filtering by date range and message count.
+
+        Args:
+            chat_id (int): ID of the Telegram chat.
+            days_limit (int, optional): Number of days back to include messages. Defaults to 0 (no limit).
+            max_messages (int, optional): Maximum number of messages to return. Defaults to 0 (no limit).
+
+        Returns:
+            dict[str, list[ChatLog]]: Mapping of date strings (formatted with DATE_FULL_FORMAT)
+            to lists of ChatLog entries for that date.
+        """
         # Get the current date
         current_date = self.datetime.now()
 
@@ -377,6 +395,17 @@ class ChatHistory:
         return result
 
     def get_last_messages(self, chat_id: int, limit: int = 20, days: int=0) -> List[ChatLog]:
+        """
+        Get the most recent messages from a chat.
+
+        Args:
+            chat_id (int): ID of the Telegram chat.
+            limit (int, optional): Maximum number of messages to return. Defaults to 20.
+            days (int, optional): Number of days back to include messages. Defaults to 0 (no limit).
+
+        Returns:
+            List[ChatLog]: List of the most recent ChatLog entries.
+        """
         # Get messages using the existing method
         messages_dict = self.get_messages(chat_id, days)
 
@@ -391,11 +420,35 @@ class ChatHistory:
         return all_messages
 
     def get_friendly_last_messages(self, chat_id: int, limit: int = 20, days: int=0) -> str:
+        """
+        Get a human-friendly string representation of the most recent messages.
+
+        Args:
+            chat_id (int): ID of the Telegram chat.
+            limit (int, optional): Maximum number of messages to include. Defaults to 20.
+            days (int, optional): Number of days back to include messages. Defaults to 0 (no limit).
+
+        Returns:
+            str: Friendly-formatted chat log.
+        """
         return friendly_chat_log(self.get_last_messages(chat_id, limit, days))
 
     def get_messages_since_last_from_user(self, chat_id: int, user_id: int, tolerance: int=5) -> List[ChatLog]:
+        """
+        Retrieve messages from a chat since the last message sent by a given user.
+
+        Args:
+            chat_id (int): ID of the Telegram chat.
+            user_id (int): ID of the user whose last message is the reference point.
+            tolerance (int, optional): Minimum number of intervening messages to skip
+                before considering a previous user message. Defaults to 5.
+
+        Returns:
+            List[ChatLog]: List of ChatLog entries after the identified user message.
+            If no user message is found within the tolerance, returns all available messages.
+        """
         # Get all messages for this chat
-        messages_dict = self.get_messages(chat_id, 0, max_messages=100)
+        messages_dict = self.get_messages(chat_id, 10)
 
         # Flatten the dictionary into a single list
         all_messages = []
@@ -428,10 +481,22 @@ class ChatHistory:
 
         # If a previous message with sufficient tolerance was found, use that as the starting point
         if previous_user_msg_index != -1:
-            return all_messages[previous_user_msg_index:]
+            return all_messages[previous_user_msg_index:-1]
 
         # Otherwise, return all messages after the last message from the user
-        return all_messages[last_user_msg_index:]
+        return all_messages[last_user_msg_index:-1]
 
     def get_friendly_messages_since_last_from_user(self, chat_id: int, user_id: int) -> str:
-        return friendly_chat_log(self.get_messages_since_last_from_user(chat_id, user_id))
+        """
+        Get a human-friendly string of messages since the last message from a specific user.
+
+        Args:
+            chat_id (int): ID of the Telegram chat.
+            user_id (int): ID of the user whose last message is the reference point.
+
+        Returns:
+            str: Friendly-formatted subset of chat logs.
+        """
+        chat_cropped = list_crop(self.get_messages_since_last_from_user(chat_id, user_id), max_size=40)
+
+        return friendly_chat_log(chat_cropped)
