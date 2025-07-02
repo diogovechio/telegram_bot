@@ -72,6 +72,9 @@ async def process_reply_message(llm: LLM, telegram: Telegram, message: Message) 
     if reply.photo:
         image_description = await get_photo_description(llm=llm, telegram=telegram, message=reply, extra_prompt=message.text)
         return f" ->> [... {sender_name} havia enviado a imagem: {image_description} ]"
+    elif reply.document and reply.document.mime_type == "application/pdf":
+        doc_description = await get_doc_description(llm=llm, telegram=telegram, message=reply, extra_prompt=message.text)
+        return f" ->> [... {sender_name} havia enviado um documento PDF: {doc_description} ]"
     else:
         reply_text = reply.text or ""
         return f" ->>  [... {sender_name} havia dito anteriormente: [[{reply_text}]] ]"
@@ -202,6 +205,7 @@ def image_trigger(message: Message) -> bool:
 def negative_response(text: str) -> bool:
     return any(word in text.lower() for word in ["desculpe,", "desculpa,", "desculpas,", "não posso ", "não vou "])
 
+
 async def get_photo_description(
         telegram: Telegram,
         llm: LLM,
@@ -240,6 +244,48 @@ async def get_photo_description(
         return f"[[{caption}IMAGEM ANEXADA: {description} ]]"
     except Exception as e:
         logger.exception(f"Error processing reply photo: {e}")
+        return ""
+
+
+async def get_doc_description(
+        telegram: Telegram,
+        llm: LLM,
+        message: ReplyToMessage | Message,
+        extra_prompt: None | str = None,
+) -> str:
+    if not telegram or not llm:
+        logger.warning("Telegram or LLM not provided, cannot process reply document")
+        return ""
+
+    if not message.document or message.document.mime_type != "application/pdf":
+        return ""
+
+    try:
+        temp_message = Message(
+            from_=message.from_,
+            message_id=message.message_id,
+            chat=message.chat,
+            date=message.date,
+            text=message.text,
+            document=message.document,
+            caption=message.caption
+        )
+
+        document = await telegram.document_downloader(temp_message)
+        if not document:
+            logger.warning("Failed to download reply document")
+            return ""
+
+        prompt = f"Descreva o conteúdo deste documento PDF chamado '{document.file_name}' com o máximo de detalhes identificáveis"
+        if extra_prompt:
+            prompt = f"Sobre o documento PDF '{document.file_name}': " + extra_prompt
+
+        caption = f'Legenda: {temp_message.caption}: ' if temp_message.caption else ""
+        description = await llm.generate_text(prompt=prompt, model="gpt-4.1-mini", document=document)
+
+        return f"[[{caption}DOCUMENTO PDF ANEXADO: {description} ]]"
+    except Exception as e:
+        logger.exception(f"Error processing reply document: {e}")
         return ""
 
 

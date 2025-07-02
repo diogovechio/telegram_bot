@@ -1,13 +1,14 @@
-# Project
+# Internal
 import asyncio
 
+
+# Project
 from pedro.brain.modules.chat_history import ChatHistory
 from pedro.brain.modules.feedback import sending_action
 from pedro.brain.modules.llm import LLM
 from pedro.brain.modules.telegram import Telegram
 from pedro.brain.modules.user_data_manager import UserDataManager
 from pedro.brain.reactions.fact_check import fact_check
-from pedro.data_structures.images import MessageImage
 from pedro.data_structures.telegram_message import Message
 from pedro.utils.prompt_utils import image_trigger, create_basic_prompt
 from pedro.utils.text_utils import adjust_pedro_casing

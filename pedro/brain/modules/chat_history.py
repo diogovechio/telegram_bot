@@ -1,6 +1,6 @@
 # Internal
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 import os
 from typing import List

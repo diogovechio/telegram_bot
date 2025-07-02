@@ -1,3 +1,11 @@
+"""
+Telegram module for handling communication with the Telegram Bot API.
+
+This module provides a class for interacting with the Telegram Bot API,
+including methods for sending and receiving messages, media, and other
+Telegram-specific actions.
+"""
+
 # Internal
 import asyncio
 import logging
@@ -9,19 +17,35 @@ import random
 # External
 import aiohttp
 
-from pedro.data_structures.images import MessageImage, MessageDocument
+
 # Project
 from pedro.data_structures.telegram_message import Message, MessagesResults, MessageReceived
 from pedro.data_structures.max_size_list import MaxSizeList
+from pedro.data_structures.images import MessageImage, MessageDocument
 
 
 class Telegram:
+    """
+    A class for interacting with the Telegram Bot API.
+
+    This class provides methods for sending messages, media, and performing
+    various actions through the Telegram Bot API. It also handles message
+    polling to receive new messages.
+    """
     def __init__(
         self,
         token: str,
         semaphore: int = 3,
         polling_rate: int = 0.5
     ):
+        """
+        Initialize the Telegram client.
+
+        Args:
+            token (str): The Telegram Bot API token.
+            semaphore (int, optional): Maximum number of concurrent API requests. Defaults to 3.
+            polling_rate (int, optional): Rate at which to poll for new messages in seconds. Defaults to 0.5.
+        """
         self._api_route = f"https://api.telegram.org/bot{token}"
         self._semaphore = asyncio.Semaphore(semaphore)
         self._polling_rate = polling_rate
@@ -35,6 +59,15 @@ class Telegram:
         asyncio.create_task(self._message_polling())
 
     async def get_new_message(self) -> T.AsyncGenerator[MessageReceived, None]:
+        """
+        Get new messages from Telegram.
+
+        Yields:
+            MessageReceived: New messages that haven't been processed yet.
+
+        Returns:
+            AsyncGenerator[MessageReceived, None]: An async generator of new messages.
+        """
         if self._messages.result:
             for message in self._messages.result:
                 message: MessageReceived
@@ -45,6 +78,12 @@ class Telegram:
                     self._interacted_updates.append(message.update_id)
 
     async def _message_polling(self) -> None:
+        """
+        Internal method to continuously poll for new messages from Telegram.
+
+        This method runs as a background task and updates the internal message store
+        with new messages from the Telegram API.
+        """
         while True:
             try:
                 await asyncio.sleep(self._polling_rate)
@@ -66,6 +105,18 @@ class Telegram:
             self,
             message: Message,
     ) -> None | MessageImage:
+        """
+        Download an image from a Telegram message.
+
+        This method attempts to download an image from a message, either from
+        the photo field or from a document if it's an image file.
+
+        Args:
+            message (Message): The Telegram message containing the image.
+
+        Returns:
+            MessageImage or None: The downloaded image data or None if download failed.
+        """
         if not message.photo and message.document:
             document = await self.document_downloader(message)
 
@@ -99,6 +150,20 @@ class Telegram:
             message: Message,
             limit_mb: int = 10,
     ) -> None | MessageDocument:
+        """
+        Download a document from a Telegram message.
+
+        This method downloads a document from a message if it exists and is within
+        the specified size limit.
+
+        Args:
+            message (Message): The Telegram message containing the document.
+            limit_mb (int, optional): Maximum document size in megabytes. Defaults to 10.
+
+        Returns:
+            MessageDocument or None: The downloaded document data or None if download failed
+                                    or document exceeds size limit.
+        """
         if not message.document or message.document.file_size > limit_mb * 1024 * 1024:
             return None
 
@@ -121,6 +186,17 @@ class Telegram:
                             logging.critical(f"Document download failed: {download_request.status}")
 
     async def send_photo(self, image: bytes, chat_id: int, caption=None, reply_to=None, sleep_time=0, max_retries=5) -> None:
+        """
+        Send a photo to a Telegram chat.
+
+        Args:
+            image (bytes): The image data to send.
+            chat_id (int): The ID of the chat to send the photo to.
+            caption (str, optional): Caption for the photo. Defaults to None.
+            reply_to (int, optional): Message ID to reply to. Defaults to None.
+            sleep_time (int, optional): Time to sleep before sending in seconds. Defaults to 0.
+            max_retries (int, optional): Maximum number of retry attempts. Defaults to 5.
+        """
         await asyncio.sleep(sleep_time)
 
         for _ in range(max_retries):
@@ -143,6 +219,15 @@ class Telegram:
             await asyncio.sleep(10)
 
     async def send_video(self, video: bytes, chat_id: int, reply_to=None, sleep_time=0) -> None:
+        """
+        Send a video to a Telegram chat.
+
+        Args:
+            video (bytes): The video data to send.
+            chat_id (int): The ID of the chat to send the video to.
+            reply_to (int, optional): Message ID to reply to. Defaults to None.
+            sleep_time (int, optional): Time to sleep before sending in seconds. Defaults to 0.
+        """
         await asyncio.sleep(sleep_time)
 
         async with self._semaphore:
@@ -160,6 +245,15 @@ class Telegram:
                 logging.info(f"{sys._getframe().f_code.co_name} - {resp.status}")
 
     async def send_voice(self, audio: bytes, chat_id: int, reply_to=None, sleep_time=0) -> None:
+        """
+        Send a voice message to a Telegram chat.
+
+        Args:
+            audio (bytes): The audio data to send as voice message.
+            chat_id (int): The ID of the chat to send the voice message to.
+            reply_to (int, optional): Message ID to reply to. Defaults to None.
+            sleep_time (int, optional): Time to sleep before sending in seconds. Defaults to 0.
+        """
         await asyncio.sleep(sleep_time)
 
         async with self._semaphore:
@@ -182,6 +276,18 @@ class Telegram:
             action: T.Union[T.Literal['typing'], T.Literal['upload_photo'], T.Literal['find_location']] = 'typing',
             repeats=False
     ) -> None:
+        """
+        Send a chat action to a Telegram chat.
+
+        This method sends a chat action (such as "typing...") to indicate that
+        the bot is performing some action.
+
+        Args:
+            chat_id (int): The ID of the chat to send the action to.
+            action (Union[Literal['typing'], Literal['upload_photo'], Literal['find_location']], optional): 
+                The action to send. Defaults to 'typing'.
+            repeats (bool, optional): Whether to repeat the action continuously. Defaults to False.
+        """
         while True:
             async with self._semaphore:
                 async with self._session.post(
@@ -201,6 +307,16 @@ class Telegram:
             await asyncio.sleep(round(5 + (random.random() * 2)))
 
     async def send_document(self, document: bytes, chat_id: int, caption=None, reply_to=None, sleep_time=0) -> None:
+        """
+        Send a document to a Telegram chat.
+
+        Args:
+            document (bytes): The document data to send.
+            chat_id (int): The ID of the chat to send the document to.
+            caption (str, optional): Caption for the document. Defaults to None.
+            reply_to (int, optional): Message ID to reply to. Defaults to None.
+            sleep_time (int, optional): Time to sleep before sending in seconds. Defaults to 0.
+        """
         await asyncio.sleep(sleep_time)
 
         async with self._semaphore:
@@ -226,6 +342,19 @@ class Telegram:
             sleep_time=0,
             replace_token: T.Optional[str] = None
     ) -> int:
+        """
+        Forward a message from one chat to another.
+
+        Args:
+            target_chat_id (int): The ID of the chat to forward the message to.
+            from_chat_id (int): The ID of the chat to forward the message from.
+            message_id (int): The ID of the message to forward.
+            sleep_time (int, optional): Time to sleep before forwarding in seconds. Defaults to 0.
+            replace_token (Optional[str], optional): Alternative bot token to use. Defaults to None.
+
+        Returns:
+            int: HTTP status code of the request.
+        """
         await asyncio.sleep(sleep_time)
         url = self._api_route
         if replace_token:
@@ -257,6 +386,22 @@ class Telegram:
             disable_web_page_preview=False,
             max_retries=7
     ) -> None:
+        """
+        Send a text message to a Telegram chat.
+
+        This method attempts to send a message with the specified parse mode,
+        falling back to other parse modes if the initial attempt fails.
+
+        Args:
+            message_text (str): The text message to send.
+            chat_id (int): The ID of the chat to send the message to.
+            reply_to (int, optional): Message ID to reply to. Defaults to None.
+            sleep_time (int, optional): Time to sleep before sending in seconds. Defaults to 0.
+            parse_mode (str, optional): Message formatting mode. Defaults to "Markdown".
+            disable_notification (bool, optional): Whether to send the message silently. Defaults to False.
+            disable_web_page_preview (bool, optional): Whether to disable link previews. Defaults to False.
+            max_retries (int, optional): Maximum number of retry attempts. Defaults to 7.
+        """
         fallback_parse_modes = ["", "HTML", "MarkdownV2", "Markdown"]
 
         await asyncio.sleep(sleep_time)
@@ -282,6 +427,13 @@ class Telegram:
                     parse_mode = fallback_parse_modes.pop() if len(fallback_parse_modes) else ""
 
     async def leave_chat(self, chat_id: int, sleep_time=0) -> None:
+        """
+        Leave a Telegram chat.
+
+        Args:
+            chat_id (int): The ID of the chat to leave.
+            sleep_time (int, optional): Time to sleep before leaving in seconds. Defaults to 0.
+        """
         await asyncio.sleep(sleep_time)
 
         async with self._session.post(
@@ -291,6 +443,13 @@ class Telegram:
             logging.info(f"{sys._getframe().f_code.co_name} - {resp.status}")
 
     async def delete_message(self, chat_id: int, message_id: int) -> None:
+        """
+        Delete a message from a Telegram chat.
+
+        Args:
+            chat_id (int): The ID of the chat containing the message.
+            message_id (int): The ID of the message to delete.
+        """
         async with self._session.post(
                 f"{self._api_route}/deleteMessage".replace('\n', ''),
                 json={
@@ -301,6 +460,13 @@ class Telegram:
             logging.info(f"{sys._getframe().f_code.co_name} - {resp.status}")
 
     async def set_chat_title(self, chat_id: int, title: str) -> None:
+        """
+        Set the title of a Telegram chat.
+
+        Args:
+            chat_id (int): The ID of the chat to rename.
+            title (str): The new title for the chat.
+        """
         async with self._session.post(
                 f"{self._api_route}/setChatTitle".replace('\n', ''),
                 json={
@@ -318,6 +484,16 @@ class Telegram:
             sleep_time=0,
             is_big=True
     ) -> None:
+        """
+        Add an emoji reaction to a message.
+
+        Args:
+            message_id (int): The ID of the message to react to.
+            chat_id (int): The ID of the chat containing the message.
+            reaction (str, optional): The emoji to use as reaction. Defaults to None.
+            sleep_time (int, optional): Time to sleep before reacting in seconds. Defaults to 0.
+            is_big (bool, optional): Whether to show the reaction as big. Defaults to True.
+        """
         await asyncio.sleep(sleep_time)
 
         async with self._session.post(
