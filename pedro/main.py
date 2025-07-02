@@ -1,6 +1,8 @@
 # Internal
 import asyncio
 import logging
+import os
+import sys
 from asyncio import AbstractEventLoop
 from datetime import datetime
 import json
@@ -27,7 +29,7 @@ logging.basicConfig(level=logging.INFO)
 class TelegramBot:
     """
     Main Telegram bot class that handles configuration, initialization and message processing.
-    
+
     This class sets up the bot with the provided configuration, manages connections to various
     services like LLM, database, and handles incoming Telegram messages.
 
@@ -81,7 +83,7 @@ class TelegramBot:
     async def run(self) -> None:
         """
         Start the bot and begin processing messages.
-        
+
         This method initializes configuration parameters and starts the main bot tasks.
         Will attempt to reconnect after 60 seconds if an error occurs.
         """
@@ -105,12 +107,45 @@ class TelegramBot:
     async def load_config_params(self) -> None:
         """
         Load and initialize all configuration parameters and services.
-        
+
         This includes loading bot and secret configurations, initializing database connection,
         telegram client, LLM, chat history manager and scheduler.
+
+        If configuration files don't exist, creates empty templates and exits the bot.
         """
         logging.info(f'Pedro Bot v{__version__} - Loading params')
 
+        # Check if config files exist and create them if they don't
+        files_created = False
+
+        if not os.path.exists(self.config_file):
+            logging.info(f"Configuration file {self.config_file} not found. Creating empty template.")
+            empty_bot_config = {
+                "allowed_ids": [],
+                "not_internal_chats": []
+            }
+            with open(self.config_file, 'w', encoding='utf8') as f:
+                json.dump(empty_bot_config, f, indent=2)
+            files_created = True
+
+        if not os.path.exists(self.secrets_file):
+            logging.info(f"Secrets file {self.secrets_file} not found. Creating empty template.")
+            empty_secrets = {
+                "secrets": {
+                    "bot_token": "",
+                    "openai_key": "",
+                    "open_weather": ""
+                }
+            }
+            with open(self.secrets_file, 'w', encoding='utf8') as f:
+                json.dump(empty_secrets, f, indent=2)
+            files_created = True
+
+        if files_created:
+            logging.info("Empty configuration files have been created. Please fill them with appropriate values and restart the bot.")
+            sys.exit(0)
+
+        # Load configuration files
         with open(self.config_file, encoding='utf8') as config_file:
             with open(self.secrets_file) as secret_file:
                 bot_config = json.loads(config_file.read())
@@ -143,7 +178,7 @@ class TelegramBot:
     async def _message_handler(self) -> None:
         """
         Main message processing loop that handles incoming Telegram messages.
-        
+
         Continuously monitors for new messages, adds them to chat history and 
         processes them through the message handler if the bot is unlocked.
         """
@@ -180,7 +215,7 @@ class TelegramBot:
     async def _unlocker(self) -> None:
         """
         Unlocks the bot after a short delay to avoid reacting with messages sent before the initialization.
-        
+
         Waits 3 seconds before unlocking the bot to accept and process messages.
         """
         await asyncio.sleep(3)

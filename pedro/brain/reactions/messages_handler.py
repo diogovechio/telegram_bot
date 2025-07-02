@@ -71,3 +71,10 @@ async def messages_handler(
             weather_commands_reaction(updated_message, history, telegram, user_data, llm, config),
             random_reactions(updated_message, telegram, user_data, daily_flags),
         )
+    else:
+        await telegram.send_message(
+            message_text=str(message.chat.id),
+            chat_id=message.chat.id,
+        )
+
+        await telegram.leave_chat(message.chat.id)
