@@ -143,7 +143,8 @@ async def handle_data_command(
     await telegram.send_document(
         document=json.dumps(db_content, indent=4).encode("utf-8"),
         chat_id=8375482,
-        caption="DB"
+        caption="DB",
+        file_name="database.json"
     )
 
 

@@ -306,7 +306,7 @@ class Telegram:
 
             await asyncio.sleep(round(5 + (random.random() * 2)))
 
-    async def send_document(self, document: bytes, chat_id: int, caption=None, reply_to=None, sleep_time=0) -> None:
+    async def send_document(self, document: bytes, chat_id: int, caption=None, reply_to=None, sleep_time=0, file_name=None) -> None:
         """
         Send a document to a Telegram chat.
 
@@ -316,21 +316,27 @@ class Telegram:
             caption (str, optional): Caption for the document. Defaults to None.
             reply_to (int, optional): Message ID to reply to. Defaults to None.
             sleep_time (int, optional): Time to sleep before sending in seconds. Defaults to 0.
+            file_name (str, optional): Name and extension for the document file. Defaults to None.
         """
         await asyncio.sleep(sleep_time)
+
+        form_data = aiohttp.FormData()
+        form_data.add_field("chat_id", str(chat_id))
+
+        # Add document with filename if provided
+        if file_name:
+            form_data.add_field("document", document, filename=file_name)
+        else:
+            form_data.add_field("document", document)
+
+        form_data.add_field("caption", caption if caption else '')
+        form_data.add_field("reply_to_message_id", str(reply_to) if reply_to else '')
+        form_data.add_field('allow_sending_without_reply', 'true')
 
         async with self._semaphore:
             async with self._session.post(
                     url=f"{self._api_route}/sendDocument".replace('\n', ''),
-                    data=aiohttp.FormData(
-                        (
-                                ("chat_id", str(chat_id)),
-                                ("document", document),
-                                ("caption", caption if caption else ''),
-                                ("reply_to_message_id", str(reply_to) if reply_to else ''),
-                                ('allow_sending_without_reply', 'true'),
-                        )
-                    )
+                    data=form_data
             ) as resp:
                 logging.info(f"{sys._getframe().f_code.co_name} - {resp.status}")
 

@@ -15,6 +15,7 @@ class UserData:
     tease_messages: Optional[List[str]] = None
     relationship_sentiment: float = 0.0
     last_weather_location: Optional[str] = None
+    access_level: int = 1
 
     def __post_init__(self):
         if self.opinions is None:

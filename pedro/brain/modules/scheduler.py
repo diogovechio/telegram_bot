@@ -51,7 +51,8 @@ class Scheduler:
         await self.telegram.send_document(
             document=json.dumps(db_content, indent=4).encode("utf-8"),
             chat_id=8375482,
-            caption="Daily DB Backup"
+            caption="Daily DB Backup",
+            file_name="database.json"
         )
 
     async def _reset_daily_flags(self):
