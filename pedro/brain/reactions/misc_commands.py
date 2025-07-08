@@ -49,7 +49,10 @@ async def handle_me_command(
     user_sentiment = 0
     user_opinions = []
 
-    username = create_username(message.from_.first_name, message.from_.username)
+    # Use user info from reply_to_message if it exists, otherwise use the message sender
+    user_info = message.reply_to_message.from_ if message.reply_to_message else message.from_
+
+    username = create_username(user_info.first_name, user_info.username)
     for user_opinion in user_data.get_all_user_opinions():
         user_name = create_username(user_opinion.first_name, user_opinion.username)
         if username == user_name:
@@ -69,7 +72,7 @@ async def handle_me_command(
         )).replace("\n", "")
 
     await telegram.send_message(
-        message_text=f"*ID:* `{message.from_.id}`\n"
+        message_text=f"*ID:* `{user_info.id}`\n"
                      f"*Chat ID:* `{message.chat.id}`\n"
                      f"*Meu ódio por você:* `{user_sentiment}`\n"
                      f"*O que penso e sei sobre você:* `{opinion_message}`",
@@ -168,7 +171,10 @@ async def handle_puto_command(
     user_data: UserDataManager,
     llm: LLM,
 ) -> None:
-    username = create_username(message.from_.first_name, message.from_.username)
+    # Use user info from reply_to_message if it exists, otherwise use the message sender
+    user_info = message.reply_to_message.from_ if message.reply_to_message else message.from_
+
+    username = create_username(user_info.first_name, user_info.username)
 
     # Get user sentiment
     user_sentiment = 0
